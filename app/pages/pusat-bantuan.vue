@@ -31,7 +31,7 @@ const questions = [
   {
     category: 'Hasil',
     question: 'Bagaimana nilai tertimbang dihitung?',
-    answer: 'Setiap indikator dikalikan bobotnya dengan level yang dipilih, lalu dijumlahkan per domain. Nilai domain dikalikan bobot domain dan dijumlahkan menjadi nilai akhir. Nilai baru muncul setelah semua indikator memiliki level.',
+    answer: 'Setiap indikator dikalikan bobotnya dengan level yang dipilih, lalu dijumlahkan per domain. Nilai domain dikalikan bobot domain dan dijumlahkan menjadi nilai akhir. Nilai baru muncul setelah semua indikator memiliki level. Pada katalog dengan tiga level, nilai indeks diberi predikat: 2,34 sampai 3,00 Memuaskan, 1,67 sampai di bawah 2,34 Cukup, dan 1,00 sampai di bawah 1,67 Kurang.',
   },
 ]
 const filteredQuestions = computed(() => {

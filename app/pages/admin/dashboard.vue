@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getApiError } from '../../utils/format'
-import { formatScore, weightedScore, withFinalLevels, type DomainScore } from '../../utils/score'
+import { formatScore, scorePredicate, weightedScore, withFinalLevels, type DomainScore } from '../../utils/score'
 
 interface UnitResponse {
   maturityLevelId: string | null
@@ -58,8 +58,10 @@ const selectedRow = computed((): ScoredRow | undefined => {
 const selectedScore = computed(() => selectedRow.value?.final ?? selectedRow.value?.self ?? null)
 const selectedHasGap = computed(() => Boolean(selectedScore.value?.domains.some((domain: DomainScore) => domain.score === null)))
 
-function total(score: { total: number | null } | null) {
-  return score?.total === null || score?.total === undefined ? '-' : formatScore(score.total)
+function total(score: { total: number | null; maxLevel: number } | null) {
+  if (score?.total === null || score?.total === undefined) return '-'
+  const predicate = scorePredicate(score.total, score.maxLevel)
+  return predicate ? `${formatScore(score.total)} · ${predicate}` : formatScore(score.total)
 }
 function domainValue(score: { domains: DomainScore[] } | null, domainId: string) {
   const value = score?.domains.find(({ id }) => id === domainId)?.score
@@ -140,7 +142,7 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
         <div class="score-layout">
           <div class="score-table-block">
             <p class="score-total-chip" :class="{ 'is-pending': selectedScore.total === null }">
-              <template v-if="selectedScore.total !== null">{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(selectedScore.total) }} dari {{ selectedScore.maxLevel }}</template>
+              <template v-if="selectedScore.total !== null">{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(selectedScore.total) }} dari {{ selectedScore.maxLevel }}<template v-if="scorePredicate(selectedScore.total, selectedScore.maxLevel)"> · Predikat {{ scorePredicate(selectedScore.total, selectedScore.maxLevel) }}</template></template>
               <template v-else>Nilai total muncul setelah semua indikator memiliki level</template>
             </p>
             <div class="data-table-wrap">

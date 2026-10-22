@@ -2186,16 +2186,15 @@ textarea.control {
   font-weight: 700;
 }
 
-.score-domains {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 18px;
-  margin: 0;
-  padding: 0;
-  color: var(--muted);
+.score-predicate {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 8px;
+  color: var(--text);
   font-size: 13px;
-  list-style: none;
+  font-weight: 600;
 }
+
 
 .evidence-form {
   display: grid;

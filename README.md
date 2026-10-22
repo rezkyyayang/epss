@@ -76,6 +76,7 @@ Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`ht
 - Unit assignment and indicator catalogs lock when the first assessment for a period is created.
 - Each period's catalog is Domain → Indicator → maturity levels (2 to 5). Domains and indicators carry whole-percent weights: domain weights in a period total 100, and indicator weights in each domain total 100. The catalog editor can fill in the standard catalog (5 domains, 13 indicators, 3 levels each).
 - The weighted score is the sum of (domain weight × sum of (indicator weight × chosen level)). It appears only when every indicator has a saved level. The self-assessment score uses the unit's levels; the final score uses Pusdatin's verified levels.
+- On a three-level catalog, each total gets an index predicate: 2,34 to 3,00 Memuaskan, 1,67 to under 2,34 Cukup, 1,00 to under 1,67 Kurang. The band follows the score as shown (two decimals). Catalogs on another scale show no predicate.
 - Statuses: Draf → Menunggu verifikasi → Dalam verifikasi → Terverifikasi. There is no revision round; status and audit events are stored in PostgreSQL.
 - There is no sample submission or score seed.
 
@@ -86,6 +87,7 @@ Self-service password reset, moving a User to another unit, SSO, notifications, 
 ```powershell
 npm run dev
 npm run typecheck
+npm run test:unit
 npm run test:api
 npm run build
 npm run db:generate
