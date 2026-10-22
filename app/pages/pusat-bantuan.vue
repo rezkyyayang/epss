@@ -1,0 +1,80 @@
+<script setup lang="ts">
+definePageMeta({ layout: false })
+
+const search = ref('')
+const questions = [
+  {
+    category: 'Akun',
+    question: 'Siapa yang dapat menggunakan SectOra?',
+    answer: 'SectOra memiliki dua peran. User mengisi penilaian pada unit dan periode yang ditugaskan. Admin mengelola periode, katalog, pengguna, dan memeriksa jawaban pada unit dalam cakupan aksesnya.',
+  },
+  {
+    category: 'Penilaian',
+    question: 'Bagaimana memulai penilaian?',
+    answer: 'Masuk sebagai User, pilih periode aktif yang ditugaskan, lalu buka penilaian. Setiap indikator memuat tingkat kematangan, kriteria, penjelasan, dan bukti jika diwajibkan oleh katalog.',
+  },
+  {
+    category: 'Penilaian',
+    question: 'Apakah jawaban bisa diubah setelah dikirim?',
+    answer: 'Jawaban terkunci saat menunggu pemeriksaan. Jika Admin meminta revisi, User dapat memperbarui indikator yang dikembalikan dan mengirim ulang penilaian.',
+  },
+  {
+    category: 'Pemeriksaan',
+    question: 'Bagaimana Admin memberi catatan?',
+    answer: 'Admin memeriksa jawaban dan bukti per indikator. Permintaan revisi memerlukan alasan tertulis yang tampil pada indikator terkait.',
+  },
+  {
+    category: 'Bukti dukung',
+    question: 'Bagaimana cara melampirkan bukti?',
+    answer: 'Bukti dilampirkan sebagai tautan, misalnya ke Google Drive atau OneDrive, bukan unggahan berkas. Satu indikator dapat memuat hingga 10 tautan. Pastikan Admin pemeriksa punya izin untuk membuka tautan tersebut.',
+  },
+  {
+    category: 'Hasil',
+    question: 'Bagaimana nilai tertimbang dihitung?',
+    answer: 'Setiap indikator dikalikan bobotnya dengan level yang dipilih, lalu dijumlahkan per domain. Nilai domain dikalikan bobot domain dan dijumlahkan menjadi nilai akhir. Nilai baru muncul setelah semua indikator memiliki level.',
+  },
+]
+const filteredQuestions = computed(() => {
+  const term = search.value.trim().toLocaleLowerCase('id')
+  if (!term) return questions
+  return questions.filter((item) => `${item.category} ${item.question} ${item.answer}`.toLocaleLowerCase('id').includes(term))
+})
+</script>
+
+<template>
+  <div class="help-page">
+    <header class="public-header">
+      <NuxtLink class="brand-lockup" to="/home">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>SectOra</span>
+      </NuxtLink>
+      <nav aria-label="Navigasi utama">
+        <NuxtLink to="/home">Beranda</NuxtLink>
+        <NuxtLink class="btn btn-secondary btn-small" to="/login">Masuk</NuxtLink>
+      </nav>
+    </header>
+    <main class="help-content">
+      <PageHeading title="Pusat bantuan" subtitle="Jawaban singkat tentang akun, penilaian, pemeriksaan, dan bukti dukung." />
+      <div class="help-search field">
+        <label for="help-search">Cari panduan</label>
+        <input id="help-search" v-model="search" class="control" type="search" placeholder="Contoh: bukti dukung">
+      </div>
+      <div v-if="filteredQuestions.length" class="faq-list">
+        <details v-for="item in filteredQuestions" :key="item.question" class="faq-item">
+          <summary>
+            <span class="faq-category">{{ item.category }}</span>
+            <strong>{{ item.question }}</strong>
+          </summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      </div>
+      <EmptyState v-else title="Panduan tidak ditemukan" message="Coba kata kunci lain atau hapus pencarian." >
+        <button class="btn btn-secondary" type="button" @click="search = ''">Hapus pencarian</button>
+      </EmptyState>
+    </main>
+    <footer class="public-footer">
+      <span>SectOra</span>
+      <NuxtLink to="/login">Masuk</NuxtLink>
+    </footer>
+  </div>
+</template>

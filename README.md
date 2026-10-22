@@ -1,0 +1,91 @@
+# SectOra
+
+SectOra is an Indonesian assessment and review application built with Nuxt, Prisma, and PostgreSQL. It follows the interaction patterns described in `Analisis_EPSS_BPS_dan_Rancangan_SectOra.md` and the interface direction in `design.md`. It uses its own SectOra identity and starts with an empty database.
+
+## Requirements
+
+- Node.js 20 or newer
+- Docker Compose
+- npm
+
+## Local setup
+
+1. Install dependencies and prepare local settings. Put a unique local database password in `POSTGRES_PASSWORD`, then set the same password in `DATABASE_URL`:
+
+   ```powershell
+   npm install
+   Copy-Item .env.example .env
+   ```
+
+   Use a password with URL-safe characters, such as a 32-byte hexadecimal value. Keep `.env` private; the PostgreSQL port binds to this machine only. To use a hosted database such as Supabase instead, put its connection string in `DATABASE_URL` and skip step 2.
+
+2. Start PostgreSQL:
+
+   ```powershell
+   docker compose up -d db
+   ```
+
+3. Create the schema:
+
+   ```powershell
+   npm run db:migrate:deploy
+   ```
+
+4. Create the first Admin. Set a private email, display name, and password (at least 14 characters) in the current PowerShell session, then run the bootstrap command:
+
+   ```powershell
+   $env:BOOTSTRAP_ADMIN_EMAIL = 'admin@your-organization.example'
+   $env:BOOTSTRAP_ADMIN_NAME = 'Your name'
+   $env:BOOTSTRAP_ADMIN_PASSWORD = 'a-long-private-password'
+   npm run admin:create
+   Remove-Item Env:BOOTSTRAP_ADMIN_EMAIL, Env:BOOTSTRAP_ADMIN_NAME, Env:BOOTSTRAP_ADMIN_PASSWORD
+   ```
+
+   The script refuses to create a second bootstrap Admin. Additional accounts are created from the Admin screen.
+
+5. Start SectOra:
+
+   ```powershell
+   npm run dev
+   ```
+
+   Open `http://localhost:3000`.
+
+The first Admin can configure periods, indicators, accounts, and units. Creating a unit grants the creating Admin access to review assessments for that unit. Assign User accounts and Admin reviewers to units from the account form. Review queues and evidence downloads are checked against those unit memberships on every API request.
+
+## Runtime settings
+
+Copy `.env.example` to `.env` for local development. Keep `.env` out of version control.
+
+| Setting | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `APP_ORIGIN` | Comma-separated origin allowlist for mutation requests; local development accepts both loopback URLs |
+| `SESSION_DURATION_HOURS` | Database session and cookie lifetime |
+
+In production, set `APP_ORIGIN` to the externally served origin. The local loopback defaults only apply outside production.
+
+Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`https` links per indicator (for example Google Drive or OneDrive). SectOra stores only the URL, so access to the linked document is controlled by wherever it is hosted.
+
+## Product behavior
+
+- User accounts can access only their assigned units and assessments they created.
+- Admins can configure system records. Review actions and evidence downloads are limited to their assigned units.
+- Unit assignment and indicator catalogs lock when the first assessment for a period is created.
+- Each period's catalog is Domain → Indicator → maturity levels (2 to 5). Domains and indicators carry whole-percent weights: domain weights in a period total 100, and indicator weights in each domain total 100. The catalog editor can fill in the standard catalog (5 domains, 13 indicators, 3 levels each).
+- The weighted score is the sum of (domain weight × sum of (indicator weight × chosen level)). It appears only when every indicator has a saved level.
+- Review decisions apply to one indicator response version. A requested revision must include a reason; status and audit events are stored in PostgreSQL.
+- There is no sample submission or score seed.
+
+Password reset, SSO, notifications, data retention, reopening approved assessments, and exports are not implemented yet.
+
+## Commands
+
+```powershell
+npm run dev
+npm run typecheck
+npm run build
+npm run db:generate
+npm run db:migrate:dev
+npm run db:migrate:deploy
+```

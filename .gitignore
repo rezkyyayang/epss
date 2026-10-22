@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Nuxt build output
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+
+# Generated Prisma client (rebuilt by `prisma generate` on install)
+generated/
+
+# Uploaded evidence and local data
+data/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Markdown docs: only README is published
+*.md
+!README.md
+docs/
+
+# Agent and editor config
+.claude/
+.agents/
+.vscode/
+.idea/
+
+# Logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
