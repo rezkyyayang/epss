@@ -90,4 +90,7 @@ npm run build
 npm run db:generate
 npm run db:migrate:dev
 npm run db:migrate:deploy
+npm run units:seed
 ```
+
+`npm run units:seed` loads the 20 LAN work units (eselon II, from the 2025 organization chart) in `scripts/seed-units.ts`. It is safe to run again: units are matched by code, then by name, and corrected in place.
