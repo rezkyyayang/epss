@@ -6,7 +6,7 @@ interface PeriodRow {
   _count: { domains: number; assessments: number }; indicatorCount: number; catalogReady: boolean
   assignments: Array<{ unit: { id: string; name: string; code: string } }>
 }
-const { data, pending, error, refresh } = await useFetch<{ periods: PeriodRow[] }>('/api/admin/periods')
+const { data, pending, error, refresh } = useFetch<{ periods: PeriodRow[] }>('/api/admin/periods', { lazy: true })
 const route = useRoute()
 const name = ref('')
 const startsAt = ref('')

@@ -7,7 +7,7 @@ interface DashboardResult {
   hasUnitAccess: boolean
 }
 
-const { data, pending, error, refresh } = await useFetch<DashboardResult>('/api/admin/dashboard')
+const { data, pending, error, refresh } = useFetch<DashboardResult>('/api/admin/dashboard', { lazy: true })
 const total = computed(() => Object.values(data.value?.counts || {}).reduce((sum, value) => sum + value, 0))
 const waiting = computed(() => (data.value?.counts.SUBMITTED || 0) + (data.value?.counts.RESUBMITTED || 0) + (data.value?.counts.IN_REVIEW || 0))
 </script>

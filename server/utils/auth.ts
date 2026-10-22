@@ -16,7 +16,16 @@ const publicUser = {
   },
 } as const
 
-export async function requireSession(event: H3Event) {
+type CurrentSession = Awaited<ReturnType<typeof loadSession>>
+
+// requireRole and requireUnitAccess both need the session, so the lookup runs once per request
+// and later callers reuse the same promise.
+export function requireSession(event: H3Event): Promise<CurrentSession> {
+  event.context.sectoraSession ??= loadSession(event)
+  return event.context.sectoraSession as Promise<CurrentSession>
+}
+
+async function loadSession(event: H3Event) {
   const config = useRuntimeConfig(event)
   const token = getCookie(event, config.sessionCookieName)
   if (!token) {

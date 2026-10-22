@@ -3,10 +3,10 @@ import { getApiError, formatDate } from '../../utils/format'
 
 interface UnitRow { id: string; name: string; code: string; isActive: boolean; _count: { memberships: number; assessments: number } }
 interface UserRow { id: string; email: string; displayName: string; role: string; isActive: boolean; createdAt: string; memberships: Array<{ unit: { id: string; name: string; code: string } }> }
-const [{ data: unitData, refresh: refreshUnits, pending: unitsPending, error: unitsError }, { data: userData, refresh: refreshUsers, pending: usersPending, error: usersError }] = await Promise.all([
-  useFetch<{ units: UnitRow[] }>('/api/admin/units'),
-  useFetch<{ users: UserRow[] }>('/api/admin/users'),
-])
+const [{ data: unitData, refresh: refreshUnits, pending: unitsPending, error: unitsError }, { data: userData, refresh: refreshUsers, pending: usersPending, error: usersError }] = [
+  useFetch<{ units: UnitRow[] }>('/api/admin/units', { lazy: true }),
+  useFetch<{ users: UserRow[] }>('/api/admin/users', { lazy: true }),
+]
 const auth = useAuth()
 // The server only accepts units the signed-in Admin holds, so the picker lists those.
 const grantableUnits = computed(() => {

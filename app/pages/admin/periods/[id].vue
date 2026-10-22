@@ -5,10 +5,10 @@ interface PeriodData { id: string; name: string; status: 'DRAFT' | 'ACTIVE' | 'C
 interface UnitData { id: string; name: string; code: string; isActive: boolean }
 const route = useRoute()
 const periodId = String(route.params.id)
-const [{ data: periodData, refresh: refreshPeriod, pending: periodPending, error: periodError }, { data: unitData, refresh: refreshUnits, pending: unitsPending, error: unitsError }] = await Promise.all([
-  useFetch<{ periods: PeriodData[] }>('/api/admin/periods'),
-  useFetch<{ units: UnitData[] }>('/api/admin/units'),
-])
+const [{ data: periodData, refresh: refreshPeriod, pending: periodPending, error: periodError }, { data: unitData, refresh: refreshUnits, pending: unitsPending, error: unitsError }] = [
+  useFetch<{ periods: PeriodData[] }>('/api/admin/periods', { lazy: true }),
+  useFetch<{ units: UnitData[] }>('/api/admin/units', { lazy: true }),
+]
 const loading = computed(() => periodPending.value || unitsPending.value)
 const loadError = computed(() => periodError.value || unitsError.value)
 const period = computed(() => periodData.value?.periods.find(({ id }) => id === periodId))

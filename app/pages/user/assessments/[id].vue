@@ -38,7 +38,7 @@ interface AssessmentDetail {
 
 const route = useRoute()
 const assessmentId = String(route.params.id)
-const { data, pending, error, refresh } = await useFetch<{ assessment: AssessmentDetail; maxEvidenceLinks: number }>(`/api/user/assessments/${assessmentId}`)
+const { data, pending, error, refresh } = useFetch<{ assessment: AssessmentDetail; maxEvidenceLinks: number }>(`/api/user/assessments/${assessmentId}`, { lazy: true })
 const selectedId = ref('')
 const selectedLevel = ref<string | null>(null)
 const explanation = ref('')

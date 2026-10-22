@@ -11,7 +11,7 @@ interface ReviewResponse {
 interface Detail { id: string; status: string; submittedAt: string | null; updatedAt: string; period: { name: string }; unit: { id: string; name: string; code: string }; createdBy: { displayName: string; email: string }; responses: ReviewResponse[]; statusEvents: Array<{ fromStatus: string | null; toStatus: string; reason: string | null; createdAt: string; actor: { displayName: string } | null }> }
 const route = useRoute()
 const id = String(route.params.id)
-const { data, pending, error, refresh } = await useFetch<{ assessment: Detail }>(`/api/admin/assessments/${id}`)
+const { data, pending, error, refresh } = useFetch<{ assessment: Detail }>(`/api/admin/assessments/${id}`, { lazy: true })
 const assessment = computed((): Detail | undefined => data.value?.assessment)
 const starting = ref(false)
 const busyResponse = ref('')

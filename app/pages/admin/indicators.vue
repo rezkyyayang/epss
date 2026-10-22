@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getApiError } from '../../utils/format'
-const { data, pending, error, refresh } = await useFetch<{ periods: Array<{ id: string; name: string; status: string; indicatorCount: number; catalogReady: boolean; _count: { assessments: number } }> }>('/api/admin/periods')
+const { data, pending, error, refresh } = useFetch<{ periods: Array<{ id: string; name: string; status: string; indicatorCount: number; catalogReady: boolean; _count: { assessments: number } }> }>('/api/admin/periods', { lazy: true })
 </script>
 
 <template>

@@ -12,7 +12,7 @@ interface QueueItem {
   completedResponses: number
   revisionCount: number
 }
-const { data, pending, error, refresh } = await useFetch<{ assessments: QueueItem[]; units: Array<{ id: string; name: string; code: string }>; periods: Array<{ id: string; name: string }>; hasUnitAccess: boolean }>('/api/admin/queue')
+const { data, pending, error, refresh } = useFetch<{ assessments: QueueItem[]; units: Array<{ id: string; name: string; code: string }>; periods: Array<{ id: string; name: string }>; hasUnitAccess: boolean }>('/api/admin/queue', { lazy: true })
 const status = ref('')
 const unitId = ref('')
 const periodId = ref('')

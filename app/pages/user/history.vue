@@ -14,7 +14,7 @@ interface HistoryData {
   }>
 }
 
-const { data, pending, error, refresh } = await useFetch<HistoryData>('/api/user/dashboard')
+const { data, pending, error, refresh } = useFetch<HistoryData>('/api/user/dashboard', { lazy: true })
 </script>
 
 <template>

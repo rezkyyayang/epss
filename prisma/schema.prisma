@@ -1,6 +1,9 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  // Loads nested includes with one joined query instead of one query per relation;
+  // each extra round trip to the hosted database costs hundreds of milliseconds.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

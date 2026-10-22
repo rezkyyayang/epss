@@ -19,7 +19,7 @@ interface DashboardData {
   assessments: AssessmentRow[]
 }
 
-const { data, pending, error, refresh } = await useFetch<DashboardData>('/api/user/dashboard')
+const { data, pending, error, refresh } = useFetch<DashboardData>('/api/user/dashboard', { lazy: true })
 const openError = ref('')
 const opening = ref('')
 
