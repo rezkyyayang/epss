@@ -14,7 +14,7 @@ const waiting = computed(() => (data.value?.counts.SUBMITTED || 0) + (data.value
 
 <template>
   <PageHeading title="Dashboard Admin" subtitle="Pantau pemeriksaan, periode, dan penilaian yang dikelola di SectOra." />
-  <div v-if="pending" class="panel loading-state" role="status">Memuat ringkasan...</div>
+  <LoadingState v-if="pending" label="Memuat ringkasan..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Ringkasan belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>

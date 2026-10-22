@@ -725,12 +725,64 @@ textarea.control {
   margin-top: 8px;
 }
 
+/* Fast loads finish inside the delay and never flash the placeholder. */
 .loading-state {
-  display: flex;
-  min-height: 180px;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  animation: loading-appear 160ms ease-out 200ms backwards;
+}
+
+.loading-label {
+  margin: 0;
   color: var(--muted);
+  font-size: 15px;
+}
+
+.loading-rows {
+  display: grid;
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-top: 1px solid #e2e8eb;
+  padding: 16px 0;
+}
+
+.loading-row:last-child {
+  padding-bottom: 0;
+}
+
+.loading-bar {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: #e2e8eb;
+}
+
+.loading-bar-main {
+  width: min(56%, 360px);
+}
+
+.loading-row:nth-child(2) .loading-bar-main {
+  width: min(44%, 280px);
+}
+
+.loading-row:nth-child(3n) .loading-bar-main {
+  width: min(64%, 420px);
+}
+
+.loading-bar-side {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+@keyframes loading-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .assessment-layout {

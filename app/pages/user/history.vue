@@ -19,7 +19,7 @@ const { data, pending, error, refresh } = useFetch<HistoryData>('/api/user/dashb
 
 <template>
   <PageHeading title="Riwayat penilaian" subtitle="Lihat progres dan keputusan pada periode yang pernah Anda buka." />
-  <div v-if="pending" class="panel loading-state" role="status">Memuat riwayat...</div>
+  <LoadingState v-if="pending" label="Memuat riwayat..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Riwayat belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>

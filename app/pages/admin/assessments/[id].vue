@@ -40,7 +40,7 @@ async function decide(response: ReviewResponse) {
 </script>
 
 <template>
-  <div v-if="pending" class="panel loading-state" role="status">Memuat penilaian...</div>
+  <LoadingState v-if="pending" label="Memuat penilaian..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">{{ getApiError(error, 'Penilaian belum dapat dimuat.') }} <NuxtLink class="btn btn-secondary btn-small" to="/admin/queue">Kembali ke antrean</NuxtLink></NoticeBanner>
   <div v-else-if="assessment" class="section-stack">
     <PageHeading :title="assessment.period.name" :subtitle="`${assessment.unit.name} · ${assessment.unit.code} · Diisi oleh ${assessment.createdBy.displayName}`">

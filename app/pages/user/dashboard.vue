@@ -54,7 +54,7 @@ async function openAssessment(periodId: string, unitId: string) {
 
 <template>
   <PageHeading title="Dashboard" subtitle="Lanjutkan penilaian yang ditugaskan atau lihat status kiriman Anda." />
-  <div v-if="pending" class="panel loading-state" role="status">Memuat data penilaian...</div>
+  <LoadingState v-if="pending" label="Memuat data penilaian..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Data belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>

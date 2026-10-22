@@ -54,7 +54,7 @@ async function createUser() {
 
 <template>
   <PageHeading title="Pengguna dan unit" subtitle="Buat akun, berikan akses unit, dan lihat keanggotaan yang sudah terdaftar." />
-  <div v-if="listsPending" class="panel loading-state" role="status">Memuat pengguna dan unit...</div>
+  <LoadingState v-if="listsPending" label="Memuat pengguna dan unit..." />
   <NoticeBanner v-else-if="listsError" tone="error" role="alert">
     {{ getApiError(listsError, 'Daftar pengguna dan unit belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refreshLists">Coba lagi</button>
