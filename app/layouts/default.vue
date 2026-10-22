@@ -1,11 +1,18 @@
 <script setup lang="ts">
 const auth = useAuth()
 const sidebarOpen = useState('sidebar:open', () => false)
+// On wide screens the burger hides the sidebar to give the page the full width. The choice lives in a
+// cookie so the server renders the same layout and it survives page changes.
+const sidebarCollapsed = useCookie<boolean>('sectora_sidebar_collapsed', { default: () => false, sameSite: 'strict', maxAge: 60 * 60 * 24 * 365 })
 const mobile = ref(false)
 const header = ref<{ focusMenuButton: () => void } | null>(null)
 const sidebar = ref<{ focusFirstLink: () => void } | null>(null)
 function updateViewport() { mobile.value = window.matchMedia('(max-width: 780px)').matches }
 async function toggleSidebar() {
+  if (!mobile.value) {
+    sidebarCollapsed.value = !sidebarCollapsed.value
+    return
+  }
   sidebarOpen.value = !sidebarOpen.value
   if (sidebarOpen.value) {
     await nextTick()
@@ -35,8 +42,8 @@ onBeforeUnmount(() => {
 <template>
   <div class="app-frame">
     <a v-if="auth.user.value" class="skip-link" href="#main-content">Lewati ke konten</a>
-    <AppHeader v-if="auth.user.value" ref="header" :menu-expanded="sidebarOpen" @toggle-menu="toggleSidebar" />
-    <div v-if="auth.user.value" class="workspace">
+    <AppHeader v-if="auth.user.value" ref="header" :menu-expanded="mobile ? sidebarOpen : !sidebarCollapsed" @toggle-menu="toggleSidebar" />
+    <div v-if="auth.user.value" class="workspace" :class="{ 'is-collapsed': sidebarCollapsed }">
       <button
         class="drawer-scrim"
         :class="{ 'is-open': sidebarOpen }"

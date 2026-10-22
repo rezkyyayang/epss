@@ -6,7 +6,7 @@ const auth = useAuth()
 const route = useRoute()
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
+const errorMessage = toastRef('error')
 const pending = ref(false)
 
 async function signIn() {
@@ -45,7 +45,6 @@ async function signIn() {
           <h2>Masuk ke SectOra</h2>
           <p>Gunakan akun yang dibuat oleh Admin organisasi Anda.</p>
         </div>
-        <NoticeBanner v-if="errorMessage" tone="error" role="alert">{{ errorMessage }}</NoticeBanner>
         <div class="field">
           <label for="email">Email</label>
           <input id="email" v-model="email" class="control" type="email" autocomplete="username" required maxlength="254">

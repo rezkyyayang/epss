@@ -54,10 +54,10 @@ const dirty = ref(false)
 const initializing = ref(false)
 const treeOpen = ref(false)
 const mobile = ref(false)
-const saveMessage = ref('')
-const pageError = ref('')
-const indicatorMessage = ref('')
-const indicatorError = ref('')
+const saveMessage = toastRef('success')
+const pageError = toastRef('error')
+const indicatorMessage = toastRef('success')
+const indicatorError = toastRef('error')
 const treeTrigger = ref<HTMLButtonElement | null>(null)
 
 const assessment = computed((): AssessmentDetail | undefined => data.value?.assessment)
@@ -180,6 +180,24 @@ async function selectResponse(id: string) {
   treeOpen.value = false
 }
 
+// Previous and next follow the same order as the indicator list: by domain, then by indicator.
+const orderedResponses = computed(() => [...responses.value].sort((a: AssessmentResponse, b: AssessmentResponse) =>
+  a.indicator.domain.position - b.indicator.domain.position || a.indicator.position - b.indicator.position))
+const currentIndex = computed(() => orderedResponses.value.findIndex((response: AssessmentResponse) => response.id === selectedId.value))
+const previousResponse = computed(() => currentIndex.value > 0 ? orderedResponses.value[currentIndex.value - 1] : undefined)
+const nextResponse = computed(() => currentIndex.value >= 0 ? orderedResponses.value[currentIndex.value + 1] : undefined)
+
+async function goToResponse(response: AssessmentResponse | undefined) {
+  if (!response) return
+  const before = selectedId.value
+  await selectResponse(response.id)
+  // The pager sits at the bottom, so bring the new indicator's heading into view.
+  if (selectedId.value !== before) {
+    await nextTick()
+    document.querySelector('#indicator-heading')?.scrollIntoView({ block: 'start' })
+  }
+}
+
 async function addEvidenceLink() {
   if (!current.value || !evidenceUrl.value.trim()) return
   if (!selectedLevel.value) {
@@ -289,8 +307,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
-    <NoticeBanner v-else-if="saveMessage" tone="success" aria-live="polite">{{ saveMessage }}</NoticeBanner>
     <NoticeBanner v-if="assessment.status === 'SUBMITTED' || assessment.status === 'IN_REVIEW'" tone="info">
       Penilaian sudah dikirim dan sedang menunggu verifikasi Pusdatin. Isian tidak dapat diubah lagi.
     </NoticeBanner>
@@ -422,9 +438,6 @@ onBeforeUnmount(() => {
             <p v-else class="field-hint">Bukti hanya dapat diubah selama penilaian masih draf.</p>
           </section>
 
-          <!-- Feedback for this indicator sits beside its buttons, where the user is looking. -->
-          <NoticeBanner v-if="indicatorError" tone="error" role="alert">{{ indicatorError }}</NoticeBanner>
-          <NoticeBanner v-else-if="indicatorMessage" tone="success" aria-live="polite">{{ indicatorMessage }}</NoticeBanner>
           <div class="indicator-actions">
             <button class="btn btn-secondary" type="button" :disabled="saving || !editable || !dirty || !selectedLevel" @click="saveCurrent">
               {{ saving ? 'Menyimpan...' : 'Simpan draf' }}
@@ -441,6 +454,16 @@ onBeforeUnmount(() => {
             <span v-if="editable && incompleteCount" class="field-hint">{{ incompleteCount }} indikator belum lengkap.</span>
             <span v-else-if="editable && !activitySaved" class="field-hint">Simpan nama dan tahun kegiatan statistik sebelum mengirim.</span>
           </div>
+
+          <nav class="indicator-pager" aria-label="Pindah indikator">
+            <button class="btn btn-secondary" type="button" :disabled="!previousResponse || saving" @click="goToResponse(previousResponse)">
+              <span aria-hidden="true">‹</span> Sebelumnya<span v-if="previousResponse" class="pager-code">{{ previousResponse.indicator.code }}</span>
+            </button>
+            <span class="pager-position">Indikator {{ currentIndex + 1 }} dari {{ orderedResponses.length }}</span>
+            <button class="btn btn-secondary" type="button" :disabled="!nextResponse || saving" @click="goToResponse(nextResponse)">
+              Berikutnya<span v-if="nextResponse" class="pager-code">{{ nextResponse.indicator.code }}</span> <span aria-hidden="true">›</span>
+            </button>
+          </nav>
         </div>
       </section>
     </div>

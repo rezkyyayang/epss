@@ -1182,6 +1182,71 @@ textarea.control {
   gap: 10px;
 }
 
+/* Stepping through indicators in order; unsaved edits are saved before moving, as with the list. */
+.indicator-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e2e8eb;
+  padding-top: 16px;
+}
+
+.pager-code {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.pager-position {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .indicator-pager {
+    flex-wrap: wrap;
+  }
+
+  .pager-position {
+    order: -1;
+    width: 100%;
+  }
+
+  .indicator-pager .btn {
+    flex: 1;
+  }
+}
+
+.menu-toggle {
+  display: grid;
+  place-items: center;
+}
+
+/* Collapsed sidebar (wide screens only): the page takes the full width, and the content drops its
+   centred max width so the assessment's indicator list moves to the left edge and the form widens. */
+@media (min-width: 781px) {
+  .workspace.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace.is-collapsed .app-sidebar {
+    display: none;
+  }
+
+  .workspace.is-collapsed .content-width {
+    width: 100%;
+  }
+}
+
+.check-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
 .check-row input {
   width: 18px;
   height: 18px;
@@ -2049,12 +2114,6 @@ textarea.control {
   grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.2fr);
 }
 
-.save-confirm {
-  color: var(--success);
-  font-size: 13px;
-  font-weight: 600;
-}
-
 /* The level select keeps its own height next to the taller comment box. */
 .review-decision .field {
   align-content: start;
@@ -2251,6 +2310,77 @@ textarea.control {
   }
 }
 
+/* Pop-up feedback for saves and failures, below the header so it never covers navigation. */
+.toast-stack {
+  position: fixed;
+  z-index: 90;
+  top: calc(var(--header-height) + 12px);
+  right: 16px;
+  display: grid;
+  width: min(380px, calc(100vw - 32px));
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 12px 12px 12px 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(23, 44, 50, 0.14);
+  pointer-events: auto;
+  animation: toast-in 160ms ease-out;
+}
+
+.toast-success { border-left-color: var(--success); }
+.toast-error { border-left-color: var(--danger); }
+.toast-info { border-left-color: var(--data); }
+
+.toast-body {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.toast-success .toast-body strong { color: var(--success); }
+.toast-error .toast-body strong { color: var(--danger); }
+.toast-info .toast-body strong { color: var(--data); }
+
+.toast-close {
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.toast-close:hover,
+.toast-close:focus-visible {
+  color: var(--text);
+  background: #eef2f3;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+  .toast-stack {
+    top: auto;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
 /* The one statistical activity per assessment: a wide name field, a short year field, then save. */
 .activity-form {
   display: grid;
@@ -2354,9 +2484,57 @@ textarea.control {
   font-size: 13px;
 }
 
-.indicator-score-table .numeric {
-  text-align: right;
-  white-space: nowrap;
+/* Domain rows open in place to list their indicators; the indented, tinted rows read as children. */
+.domain-toggle {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.domain-toggle:hover span:last-child {
+  color: var(--brand-deep);
+  text-decoration: underline;
+}
+
+.domain-caret {
+  width: 12px;
+  color: var(--brand);
+  font-size: 12px;
+}
+
+.domain-row.is-open td {
+  background: #f4f9f9;
+  font-weight: 600;
+}
+
+.indicator-subrow td {
+  background: #fbfcfc;
+  font-size: 13px;
+}
+
+.indicator-subrow td:first-child {
+  padding-left: 34px;
+}
+
+.subrow-comment {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.score-table-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .indicator-code {

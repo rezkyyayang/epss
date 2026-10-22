@@ -37,7 +37,7 @@ interface DashboardData {
 }
 
 const { data, pending, error, refresh } = useFetch<DashboardData>('/api/user/dashboard', { lazy: true })
-const openError = ref('')
+const openError = toastRef('error')
 const opening = ref('')
 // The row whose "start" form is open, keyed by period and unit.
 const startingKey = ref('')
@@ -72,7 +72,7 @@ const indicatorRows = computed(() => (data.value?.focus?.responses || []).map((r
   id: response.indicator.id,
   code: response.indicator.code,
   title: response.indicator.title,
-  domain: response.indicator.domain.name,
+  domainId: response.indicator.domain.id,
   weight: response.indicator.weight,
   maxLevel: response.indicator.maturityLevels.length,
   selfLevel: levelOf(response),
@@ -80,6 +80,18 @@ const indicatorRows = computed(() => (data.value?.focus?.responses || []).map((r
   comment: response.verification?.comment || '',
 })))
 const otherAssessments = computed(() => (data.value?.assessments || []).filter(({ id }) => id !== focusAssessment.value?.id))
+
+// Each domain row opens to show its indicators, so per-indicator levels live in the same table as the domain scores.
+const openDomains = ref<string[]>([])
+function toggleDomain(domainId: string) {
+  openDomains.value = openDomains.value.includes(domainId) ? openDomains.value.filter((id: string) => id !== domainId) : [...openDomains.value, domainId]
+}
+function indicatorsOf(domainId: string) {
+  return indicatorRows.value.filter((row: { domainId: string }) => row.domainId === domainId)
+}
+function levelText(level: number | null, max: number) {
+  return level === null ? 'Belum diisi' : `Level ${level} dari ${max}`
+}
 
 function domainScore(score: { domains: DomainScore[] } | null, domainId: string) {
   const value = score?.domains.find(({ id }) => id === domainId)?.score
@@ -122,7 +134,6 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>
   </NoticeBanner>
   <div v-else class="section-stack">
-    <NoticeBanner v-if="openError" tone="error" role="alert">{{ openError }}</NoticeBanner>
 
     <div class="dashboard-overview">
       <section class="panel" aria-labelledby="active-periods-heading">
@@ -219,22 +230,41 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
             <table class="data-table score-table">
               <thead>
                 <tr>
-                  <th scope="col">Domain</th>
+                  <th scope="col">Domain / indikator</th>
                   <th scope="col" class="numeric">Bobot</th>
                   <th scope="col" class="numeric">Mandiri</th>
                   <th v-if="verified" scope="col" class="numeric">Final</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(domain, index) in shownScore.domains" :key="domain.id">
-                  <td>{{ index + 1 }}. {{ domain.name }}</td>
-                  <td class="numeric">{{ domain.weight }}%</td>
-                  <td class="numeric">{{ domainScore(selfScore, domain.id) }}</td>
-                  <td v-if="verified" class="numeric"><strong>{{ domainScore(finalScore, domain.id) }}</strong></td>
-                </tr>
+                <template v-for="(domain, index) in shownScore.domains" :key="domain.id">
+                  <tr class="domain-row" :class="{ 'is-open': openDomains.includes(domain.id) }">
+                    <td>
+                      <button class="domain-toggle" type="button" :aria-expanded="openDomains.includes(domain.id)" :aria-controls="`domain-indicators-${domain.id}`" @click="toggleDomain(domain.id)">
+                        <span class="domain-caret" aria-hidden="true">{{ openDomains.includes(domain.id) ? '▾' : '▸' }}</span>
+                        <span>{{ index + 1 }}. {{ domain.name }}</span>
+                      </button>
+                    </td>
+                    <td class="numeric">{{ domain.weight }}%</td>
+                    <td class="numeric">{{ domainScore(selfScore, domain.id) }}</td>
+                    <td v-if="verified" class="numeric"><strong>{{ domainScore(finalScore, domain.id) }}</strong></td>
+                  </tr>
+                  <template v-if="openDomains.includes(domain.id)">
+                    <tr v-for="row in indicatorsOf(domain.id)" :id="`domain-indicators-${domain.id}`" :key="row.id" class="indicator-subrow">
+                      <td>
+                        <span class="indicator-code">{{ row.code }}</span> {{ row.title }}
+                        <span v-if="verified && row.comment" class="subrow-comment">Komentar verifikasi: {{ row.comment }}</span>
+                      </td>
+                      <td class="numeric">{{ row.weight }}%</td>
+                      <td class="numeric">{{ levelText(row.selfLevel, row.maxLevel) }}</td>
+                      <td v-if="verified" class="numeric"><strong>{{ levelText(row.finalLevel, row.maxLevel) }}</strong></td>
+                    </tr>
+                  </template>
+                </template>
               </tbody>
             </table>
           </div>
+          <p class="score-table-hint">Klik nama domain untuk melihat level tiap indikatornya.</p>
         </div>
         <figure class="score-chart">
           <RadarChart :domains="shownScore.domains" :max="shownScore.maxLevel" />
@@ -243,37 +273,6 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
             <template v-if="hasIncompleteDomain">Domain yang belum lengkap tampil di titik nol.</template>
           </figcaption>
         </figure>
-      </div>
-    </section>
-
-    <section v-if="focusAssessment && indicatorRows.length" class="panel" aria-labelledby="indicator-score-heading">
-      <div class="panel-header">
-        <div>
-          <h2 id="indicator-score-heading">Nilai per indikator</h2>
-          <p>{{ verified ? 'Level pilihan unit dibandingkan dengan level final dari Pusdatin.' : 'Level yang dipilih unit untuk tiap indikator.' }}</p>
-        </div>
-      </div>
-      <div class="data-table-wrap mobile-records indicator-score-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th scope="col">Indikator</th>
-              <th scope="col" class="numeric">Bobot</th>
-              <th scope="col" class="numeric">Level mandiri</th>
-              <th v-if="verified" scope="col" class="numeric">Level final</th>
-              <th v-if="verified" scope="col">Komentar verifikasi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in indicatorRows" :key="row.id">
-              <td data-label="Indikator"><div><span class="indicator-code">{{ row.code }}</span> {{ row.title }}<br><span class="record-meta">{{ row.domain }}</span></div></td>
-              <td data-label="Bobot" class="numeric">{{ row.weight }}%</td>
-              <td data-label="Level mandiri" class="numeric">{{ row.selfLevel === null ? 'Belum diisi' : `${row.selfLevel} dari ${row.maxLevel}` }}</td>
-              <td v-if="verified" data-label="Level final" class="numeric"><strong>{{ row.finalLevel === null ? '-' : `${row.finalLevel} dari ${row.maxLevel}` }}</strong></td>
-              <td v-if="verified" data-label="Komentar">{{ row.comment || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </section>
 

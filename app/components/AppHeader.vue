@@ -18,8 +18,10 @@ defineExpose({ focusMenuButton })
 <template>
   <header class="app-header">
     <div class="header-start">
-      <button ref="menuButton" class="header-button mobile-only" type="button" aria-label="Menu utama" aria-controls="sidebar-navigation" :aria-expanded="props.menuExpanded" @click="emit('toggleMenu')">
-        Menu
+      <button ref="menuButton" class="header-button menu-toggle" type="button" :aria-label="props.menuExpanded ? 'Tutup menu navigasi' : 'Buka menu navigasi'" aria-controls="sidebar-navigation" :aria-expanded="props.menuExpanded" @click="emit('toggleMenu')">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
       </button>
       <NuxtLink class="brand-lockup" :to="auth.user.value?.role === 'ADMIN' ? '/admin/dashboard' : '/user/dashboard'">
         <span class="brand-mark" aria-hidden="true">S</span>

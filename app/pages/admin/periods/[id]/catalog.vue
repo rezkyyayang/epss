@@ -12,8 +12,8 @@ const periodId = String(route.params.id)
 const { data, pending, error, refresh } = useFetch<{ period: { id: string; name: string; status: string }; domains: Domain[]; locked: boolean }>(`/api/admin/periods/${periodId}/catalog`, { lazy: true })
 const domains = ref<Domain[]>([])
 const saving = ref(false)
-const pageError = ref('')
-const message = ref('')
+const pageError = toastRef('error')
+const message = toastRef('success')
 watch(() => data.value?.domains, (value: Domain[] | undefined) => {
   if (!value) return
   domains.value = value.map(({ code, name, weight, indicators }) => ({
@@ -64,8 +64,6 @@ async function saveCatalog() {
   <NoticeBanner v-else-if="error" tone="error" role="alert">{{ getApiError(error, 'Katalog belum dapat dimuat.') }} <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button></NoticeBanner>
   <div v-else class="section-stack">
     <NoticeBanner v-if="locked" tone="warning">Katalog terkunci setelah penilaian pertama dibuat. Struktur, bobot, dan kriteria tidak dapat diubah.</NoticeBanner>
-    <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
-    <NoticeBanner v-else-if="message" tone="success" aria-live="polite">{{ message }}</NoticeBanner>
     <NoticeBanner v-if="data?.period.status === 'ACTIVE'" tone="info">Periode aktif. User dapat memulai penilaian pada unit yang ditugaskan.</NoticeBanner>
     <section class="panel panel-body form-stack">
       <div class="nested-toolbar">

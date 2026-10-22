@@ -23,8 +23,8 @@ const { data, pending, error, refresh } = useFetch<{ assessment: Detail }>(`/api
 const assessment = computed((): Detail | undefined => data.value?.assessment)
 const busyResponse = ref('')
 const sending = ref(false)
-const pageError = ref('')
-const success = ref('')
+const pageError = toastRef('error')
+const success = toastRef('success')
 // Form state per indicator, prefilled from a saved verification or else the unit's own level.
 const levels = reactive<Record<string, string>>({})
 const comments = reactive<Record<string, string>>({})
@@ -50,18 +50,17 @@ function isChanged(response: ReviewResponse) {
   return levels[response.id] !== response.verification.maturityLevelId || (comments[response.id] || '').trim() !== response.verification.comment
 }
 
-// The saved result is written into the page instead of reloading it, so the reviewer keeps their place.
-// The confirmation shows beside the indicator that was saved rather than at the top of the page.
-const savedResponse = ref('')
+// The saved result is written into the page instead of reloading it, so the reviewer keeps their place;
+// the toast confirms it wherever they are scrolled.
 const auth = useAuth()
 async function saveVerification(response: ReviewResponse) {
-  busyResponse.value = response.id; pageError.value = ''; success.value = ''; savedResponse.value = ''
+  busyResponse.value = response.id; pageError.value = ''; success.value = ''
   try {
     const result = await $fetch<{ verification: { maturityLevelId: string; comment: string; updatedAt: string }; assessmentStatus: string }>(`/api/admin/responses/${response.id}/verification`, { method: 'PUT', body: { maturityLevelId: levels[response.id], comment: comments[response.id] || '' } })
     response.verification = { ...result.verification, verifier: { displayName: auth.user.value?.displayName || 'Admin' } }
     comments[response.id] = result.verification.comment
     if (assessment.value) assessment.value.status = result.assessmentStatus
-    savedResponse.value = response.id
+    success.value = `Verifikasi ${response.indicator.code} tersimpan.`
   } catch (requestError) { pageError.value = getApiError(requestError, 'Verifikasi belum dapat disimpan.') }
   finally { busyResponse.value = '' }
 }
@@ -85,8 +84,6 @@ async function sendVerification() {
     <PageHeading :title="assessment.activityName || assessment.period.name" :subtitle="`${assessment.unit.name} · ${assessment.unit.code}${assessment.activityYear ? ` · ${assessment.activityYear}` : ''} · ${assessment.period.name}`">
       <template #actions><StatusBadge :status="assessment.status" /></template>
     </PageHeading>
-    <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }} <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Muat ulang</button></NoticeBanner>
-    <NoticeBanner v-else-if="success" tone="success" aria-live="polite">{{ success }}</NoticeBanner>
     <NoticeBanner v-if="assessment.status === 'DRAFT'" tone="info">Unit kerja belum mengirim penilaian ini. Verifikasi dapat dimulai setelah dikirim.</NoticeBanner>
     <NoticeBanner v-else-if="canVerify" tone="info">Tetapkan level final dan komentar untuk tiap indikator, lalu kirim hasil verifikasi di bagian bawah halaman.</NoticeBanner>
     <NoticeBanner v-else-if="assessment.status === 'VERIFIED'" tone="success">Hasil verifikasi sudah dikirim {{ formatDate(assessment.verifiedAt) }}. Level final terkunci.</NoticeBanner>
@@ -135,8 +132,7 @@ async function sendVerification() {
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" type="submit" :disabled="busyResponse === response.id || !levels[response.id] || !isChanged(response)">{{ busyResponse === response.id ? 'Menyimpan...' : response.verification ? 'Perbarui verifikasi' : 'Simpan verifikasi' }}</button>
-              <span v-if="savedResponse === response.id" class="save-confirm" role="status">Verifikasi {{ response.indicator.code }} tersimpan.</span>
-              <span v-else-if="response.verification" class="field-hint">Disimpan {{ response.verification.verifier.displayName }}, {{ formatDate(response.verification.updatedAt) }}</span>
+              <span v-if="response.verification" class="field-hint">Disimpan {{ response.verification.verifier.displayName }}, {{ formatDate(response.verification.updatedAt) }}</span>
             </div>
           </form>
           <section v-else-if="response.verification" class="review-answer">

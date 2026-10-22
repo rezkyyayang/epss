@@ -18,8 +18,8 @@ const endsAt = ref('')
 const status = ref<'DRAFT' | 'ACTIVE' | 'CLOSED'>('DRAFT')
 const assignedIds = ref<string[]>([])
 const saving = ref(false)
-const message = ref('')
-const pageError = ref('')
+const message = toastRef('success')
+const pageError = toastRef('error')
 watch(period, (value: PeriodData | undefined) => {
   if (!value) return
   name.value = value.name
@@ -29,6 +29,11 @@ watch(period, (value: PeriodData | undefined) => {
   assignedIds.value = value.assignments.map((assignment: { unit: { id: string } }) => assignment.unit.id)
 }, { immediate: true })
 const locked = computed(() => Boolean(period.value?._count.assessments))
+const activeUnits = computed(() => (unitData.value?.units || []).filter((unit: UnitData) => unit.isActive))
+const allUnitsSelected = computed(() => activeUnits.value.length > 0 && activeUnits.value.every((unit: UnitData) => assignedIds.value.includes(unit.id)))
+function toggleAllUnits() {
+  assignedIds.value = allUnitsSelected.value ? [] : activeUnits.value.map((unit: UnitData) => unit.id)
+}
 function asDate(value: string) { return value ? new Date(`${value}T00:00:00.000Z`).toISOString() : null }
 
 async function refreshData() {
@@ -57,8 +62,6 @@ async function saveAssignments() {
   <NuxtPage v-if="route.path.endsWith('/catalog')" />
   <template v-else>
   <PageHeading :title="period?.name || 'Pengaturan periode'" subtitle="Atur jadwal dan unit yang dapat mengisi penilaian." />
-  <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
-  <NoticeBanner v-else-if="message" tone="success" aria-live="polite">{{ message }}</NoticeBanner>
   <LoadingState v-if="loading && !periodData" label="Memuat pengaturan periode..." />
   <NoticeBanner v-else-if="loadError" tone="error" role="alert">
     {{ getApiError(loadError, 'Pengaturan periode belum dapat dimuat.') }}
@@ -83,8 +86,12 @@ async function saveAssignments() {
       <div class="panel-header"><div><h2>Penugasan unit</h2><p>Pilih unit aktif yang dapat membuat penilaian pada periode ini.</p></div></div>
       <div class="panel-body form-stack">
         <NoticeBanner v-if="locked" tone="warning">Penugasan terkunci karena penilaian pertama sudah dibuat.</NoticeBanner>
+        <div v-if="activeUnits.length" class="check-list-toolbar">
+          <button class="btn btn-secondary btn-small" type="button" :disabled="locked" @click="toggleAllUnits">{{ allUnitsSelected ? 'Batalkan semua' : 'Pilih semua' }}</button>
+          <span class="field-hint">{{ assignedIds.length }} dari {{ activeUnits.length }} unit dipilih</span>
+        </div>
         <div class="check-list">
-          <label v-for="unit in (unitData?.units || []).filter((item) => item.isActive)" :key="unit.id" class="check-row"><input v-model="assignedIds" type="checkbox" :value="unit.id" :disabled="locked"><span>{{ unit.name }} · {{ unit.code }}</span></label>
+          <label v-for="unit in activeUnits" :key="unit.id" class="check-row"><input v-model="assignedIds" type="checkbox" :value="unit.id" :disabled="locked"><span>{{ unit.name }} · {{ unit.code }}</span></label>
           <p v-if="!(unitData?.units || []).some((item) => item.isActive)" class="field-hint">Tidak ada unit aktif. Tambahkan unit terlebih dahulu.</p>
         </div>
         <div class="form-actions"><button class="btn btn-primary" type="button" :disabled="saving || locked" @click="saveAssignments">Simpan penugasan</button><span v-if="locked" class="field-hint">{{ period._count.assessments }} penilaian telah dibuat.</span></div>

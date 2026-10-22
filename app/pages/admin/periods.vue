@@ -12,8 +12,8 @@ const name = ref('')
 const startsAt = ref('')
 const endsAt = ref('')
 const creating = ref(false)
-const pageError = ref('')
-const success = ref('')
+const pageError = toastRef('error')
+const success = toastRef('success')
 
 function asDate(value: string) { return value ? new Date(`${value}T00:00:00.000Z`).toISOString() : null }
 async function createPeriod() {
@@ -32,8 +32,6 @@ async function createPeriod() {
   <template v-else>
   <PageHeading title="Periode penilaian" subtitle="Atur rentang waktu, katalog indikator, dan penugasan unit untuk setiap periode." />
   <div class="section-stack">
-    <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
-    <NoticeBanner v-else-if="success" tone="success" aria-live="polite">{{ success }}</NoticeBanner>
     <section class="panel" aria-labelledby="new-period-heading">
       <div class="panel-header"><div><h2 id="new-period-heading">Buat periode</h2><p>Periode baru dimulai dalam status draf.</p></div></div>
       <form class="panel-body form-stack" @submit.prevent="createPeriod">

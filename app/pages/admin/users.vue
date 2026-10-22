@@ -18,8 +18,8 @@ const password = ref('')
 const role = ref<'USER' | 'ADMIN'>('USER')
 const selectedUnitId = ref('')
 const saving = ref(false)
-const message = ref('')
-const pageError = ref('')
+const message = toastRef('success')
+const pageError = toastRef('error')
 
 async function refreshLists() {
   await Promise.all([refreshUnits(), refreshUsers()])
@@ -56,8 +56,6 @@ async function createUser() {
   </NoticeBanner>
   <template v-else>
   <div class="section-stack">
-    <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
-    <NoticeBanner v-else-if="message" tone="success" aria-live="polite">{{ message }}</NoticeBanner>
     <div class="management-grid">
       <section class="panel" aria-labelledby="create-unit-heading">
         <div class="panel-header"><div><h2 id="create-unit-heading">Tambah unit</h2><p>Kode unit harus unik.</p></div></div>
