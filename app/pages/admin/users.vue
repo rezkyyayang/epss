@@ -35,6 +35,35 @@ async function createUnit() {
   finally { saving.value = false }
 }
 
+const auth = useAuth()
+const updatingId = ref('')
+const resetUserId = ref('')
+const resetPassword = ref('')
+
+async function updateAccount(id: string, body: { isActive?: boolean; password?: string }, success: string) {
+  updatingId.value = id; message.value = ''; pageError.value = ''
+  try {
+    await $fetch(`/api/admin/users/${id}`, { method: 'PATCH', body })
+    message.value = success
+    await refreshUsers()
+    return true
+  } catch (error) {
+    pageError.value = getApiError(error, 'Akun belum dapat diperbarui.')
+    return false
+  } finally { updatingId.value = '' }
+}
+
+async function toggleActive(account: UserRow) {
+  if (account.isActive && !window.confirm(`Nonaktifkan ${account.displayName}? Akun ini langsung keluar dan tidak dapat masuk sampai diaktifkan lagi.`)) return
+  await updateAccount(account.id, { isActive: !account.isActive }, account.isActive ? 'Akun dinonaktifkan.' : 'Akun diaktifkan kembali.')
+}
+
+async function submitPasswordReset() {
+  if (await updateAccount(resetUserId.value, { password: resetPassword.value }, 'Kata sandi baru tersimpan. Sesi lama akun tersebut sudah diakhiri.')) {
+    resetUserId.value = ''; resetPassword.value = ''
+  }
+}
+
 async function createUser() {
   saving.value = true; message.value = ''; pageError.value = ''
   try {
@@ -97,8 +126,25 @@ async function createUser() {
 
     <section class="panel">
       <div class="panel-header"><div><h2>Akun terdaftar</h2><p>Keanggotaan menentukan unit yang tersedia bagi User.</p></div></div>
-      <div v-if="userData?.users.length" class="data-table-wrap mobile-records"><table class="data-table"><thead><tr><th>Nama</th><th>Peran</th><th>Unit</th><th>Dibuat</th></tr></thead><tbody><tr v-for="account in userData.users" :key="account.id"><td data-label="Nama"><strong>{{ account.displayName }}</strong><br>{{ account.email }}</td><td data-label="Peran">{{ account.role === 'ADMIN' ? 'Admin' : 'User' }} · {{ account.isActive ? 'Aktif' : 'Nonaktif' }}</td><td data-label="Unit">{{ account.memberships.map(({ unit }) => `${unit.name} · ${unit.code}`).join(', ') || (account.role === 'ADMIN' ? 'Semua unit (Pusdatin)' : 'Belum ditugaskan') }}</td><td data-label="Dibuat">{{ formatDate(account.createdAt) }}</td></tr></tbody></table></div>
+      <div v-if="userData?.users.length" class="data-table-wrap mobile-records"><table class="data-table"><thead><tr><th>Nama</th><th>Peran</th><th>Unit</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody><tr v-for="account in userData.users" :key="account.id"><td data-label="Nama"><strong>{{ account.displayName }}</strong><br>{{ account.email }}</td><td data-label="Peran">{{ account.role === 'ADMIN' ? 'Admin' : 'User' }} · {{ account.isActive ? 'Aktif' : 'Nonaktif' }}</td><td data-label="Unit">{{ account.memberships.map(({ unit }) => `${unit.name} · ${unit.code}`).join(', ') || (account.role === 'ADMIN' ? 'Semua unit (Pusdatin)' : 'Belum ditugaskan') }}</td><td data-label="Dibuat">{{ formatDate(account.createdAt) }}</td><td data-label="Aksi"><span v-if="account.id === auth.user.value?.id" class="field-hint">Akun Anda</span><button v-else class="btn btn-secondary btn-small" type="button" :disabled="updatingId === account.id" @click="toggleActive(account)">{{ account.isActive ? 'Nonaktifkan' : 'Aktifkan' }}</button></td></tr></tbody></table></div>
       <EmptyState v-else title="Belum ada akun" message="Akun yang Anda buat akan muncul di sini." />
+    </section>
+
+    <section v-if="userData?.users.length" class="panel" aria-labelledby="reset-password-heading">
+      <div class="panel-header"><div><h2 id="reset-password-heading">Atur kata sandi baru</h2><p>Untuk akun yang lupa kata sandi. Semua sesi lama akun itu ikut diakhiri.</p></div></div>
+      <form class="panel-body form-stack" @submit.prevent="submitPasswordReset">
+        <div class="form-grid">
+          <div class="field">
+            <label for="reset-user">Akun</label>
+            <select id="reset-user" v-model="resetUserId" class="control" required>
+              <option value="" disabled>Pilih akun</option>
+              <option v-for="account in userData.users" :key="account.id" :value="account.id">{{ account.displayName }} · {{ account.email }}</option>
+            </select>
+          </div>
+          <div class="field"><label for="reset-password">Kata sandi baru</label><input id="reset-password" v-model="resetPassword" class="control" required type="password" minlength="14" maxlength="200" autocomplete="new-password"><p class="field-hint">Minimum 14 karakter. Sampaikan ke pemilik akun lewat jalur yang aman.</p></div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" :disabled="Boolean(updatingId) || !resetUserId">{{ updatingId ? 'Menyimpan...' : 'Simpan kata sandi' }}</button></div>
+      </form>
     </section>
   </div>
   </template>

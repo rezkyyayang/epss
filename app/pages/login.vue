@@ -35,7 +35,7 @@ async function signIn() {
       </NuxtLink>
       <div>
         <h1>Jawaban dan bukti, dalam satu alur.</h1>
-        <p>Isi indikator yang ditugaskan. Tinjau catatan Admin pada jawaban yang perlu diperbaiki.</p>
+        <p>Isi indikator yang ditugaskan, lalu lihat level final dari Pusdatin setelah verifikasi selesai.</p>
       </div>
       <footer>Penilaian internal</footer>
     </aside>

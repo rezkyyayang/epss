@@ -35,7 +35,7 @@ definePageMeta({ layout: false })
         </div>
         <div class="workflow-line">
           <span class="workflow-number">03</span>
-          <div><strong>Admin meninjau per indikator</strong><span>Catatan revisi tetap menempel pada jawaban.</span></div>
+          <div><strong>Pusdatin memverifikasi per indikator</strong><span>Level final dan komentar tampil setelah hasil verifikasi dikirim.</span></div>
         </div>
       </section>
     </section>

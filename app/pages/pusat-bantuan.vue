@@ -16,12 +16,12 @@ const questions = [
   {
     category: 'Penilaian',
     question: 'Apakah jawaban bisa diubah setelah dikirim?',
-    answer: 'Jawaban terkunci saat menunggu pemeriksaan. Jika Admin meminta revisi, User dapat memperbarui indikator yang dikembalikan dan mengirim ulang penilaian.',
+    answer: 'Tidak. Selama status masih Draf, level, penjelasan, dan tautan bukti dapat diubah. Setelah penilaian dikirim, semuanya terkunci dan tidak dikembalikan ke unit. Periksa setiap indikator sebelum menekan Kirim penilaian.',
   },
   {
-    category: 'Pemeriksaan',
-    question: 'Bagaimana Admin memberi catatan?',
-    answer: 'Admin memeriksa jawaban dan bukti per indikator. Permintaan revisi memerlukan alasan tertulis yang tampil pada indikator terkait.',
+    category: 'Verifikasi',
+    question: 'Bagaimana Pusdatin memverifikasi penilaian?',
+    answer: 'Admin Pusdatin memeriksa jawaban dan bukti per indikator, lalu menetapkan level final dan dapat menulis komentar. Level final dan komentar baru terlihat oleh unit setelah Pusdatin mengirim hasil verifikasi.',
   },
   {
     category: 'Bukti dukung',

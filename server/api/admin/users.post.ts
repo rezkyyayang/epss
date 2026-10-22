@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { assertSameOrigin, requireRole } from '../../utils/auth'
 import { prisma } from '../../utils/db'
 import { hashPassword } from '../../utils/password'
-import { auditData, readValidatedPayload } from '../../utils/validation'
+import { auditData, isUniqueViolation, readValidatedPayload } from '../../utils/validation'
 
 const schema = z.object({
   email: z.string().trim().email().max(254),
@@ -40,6 +40,9 @@ export default defineEventHandler(async (event) => {
     })
     await tx.auditEvent.create(auditData(actor.id, 'user_created', 'User', account.id, { role: account.role, unitIds }))
     return account
+  }).catch((error) => {
+    if (isUniqueViolation(error)) throw createError({ statusCode: 409, statusMessage: 'Email ini sudah dipakai akun lain.' })
+    throw error
   })
 
   return { user: created }

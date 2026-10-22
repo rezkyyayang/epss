@@ -17,6 +17,11 @@ export async function readValidatedPayload<T extends z.ZodType>(event: H3Event, 
   return parsed.data
 }
 
+// Prisma reports a unique constraint failure as P2002; callers turn it into a 409 with their own message.
+export function isUniqueViolation(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
+}
+
 export function readRouteId(event: H3Event, key = 'id') {
   const value = getRouterParam(event, key)
   const parsed = idSchema.safeParse(value)

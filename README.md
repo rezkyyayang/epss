@@ -41,7 +41,7 @@ SectOra is an Indonesian assessment and review application built with Nuxt, Pris
    Remove-Item Env:BOOTSTRAP_ADMIN_EMAIL, Env:BOOTSTRAP_ADMIN_NAME, Env:BOOTSTRAP_ADMIN_PASSWORD
    ```
 
-   The script refuses to create a second bootstrap Admin. Additional accounts are created from the Admin screen.
+   The script refuses to create a second bootstrap Admin. Additional accounts are created from the Admin screen, where an Admin can also deactivate an account or set a new password for it. Both changes sign that account out.
 
 5. Start SectOra:
 
@@ -79,13 +79,14 @@ Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`ht
 - Statuses: Draf → Menunggu verifikasi → Dalam verifikasi → Terverifikasi. There is no revision round; status and audit events are stored in PostgreSQL.
 - There is no sample submission or score seed.
 
-Password reset, SSO, notifications, data retention, reopening approved assessments, and exports are not implemented yet.
+Self-service password reset, moving a User to another unit, SSO, notifications, data retention, reopening approved assessments, and exports are not implemented yet.
 
 ## Commands
 
 ```powershell
 npm run dev
 npm run typecheck
+npm run test:api
 npm run build
 npm run db:generate
 npm run db:migrate:dev
@@ -94,3 +95,5 @@ npm run units:seed
 ```
 
 `npm run units:seed` loads the 20 LAN work units (eselon II, from the 2025 organization chart) in `scripts/seed-units.ts`. It is safe to run again: units are matched by code, then by name, and corrected in place.
+
+`npm run test:api` runs the API regression tests in `tests/api/` against a running server. Point it at a server backed by a disposable database, because each run creates accounts and units. Set `SECTORA_TEST_URL` (included in `APP_ORIGIN`), `SECTORA_TEST_ADMIN_EMAIL`, and `SECTORA_TEST_ADMIN_PASSWORD`; without them the tests are skipped.

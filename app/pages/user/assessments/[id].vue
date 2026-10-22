@@ -253,6 +253,21 @@ async function submitAssessment() {
   }
 }
 
+// Leaving follows the same rule as switching indicators: an answer with a level is saved first, and
+// anything that cannot be saved is dropped only after the user confirms.
+const unsavedLeaveMessage = 'Ada isian yang belum tersimpan. Tinggalkan halaman ini dan buang perubahan tersebut?'
+onBeforeRouteLeave(async () => {
+  if (!editable.value) return true
+  if (dirty.value && selectedLevel.value && !(await saveCurrent())) return window.confirm(unsavedLeaveMessage)
+  if ((dirty.value && !selectedLevel.value) || activityDirty.value) return window.confirm(unsavedLeaveMessage)
+  return true
+})
+
+// A reload or closed tab cannot wait for a save, so the browser asks instead.
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  if (editable.value && (dirty.value || activityDirty.value)) event.preventDefault()
+}
+
 function updateViewport() {
   mobile.value = window.matchMedia('(max-width: 780px)').matches
 }
@@ -270,10 +285,12 @@ onMounted(() => {
   updateViewport()
   window.addEventListener('resize', updateViewport)
   window.addEventListener('keydown', onKeydown)
+  window.addEventListener('beforeunload', warnBeforeUnload)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateViewport)
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('beforeunload', warnBeforeUnload)
 })
 </script>
 

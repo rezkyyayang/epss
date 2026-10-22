@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { assertSameOrigin, requireRole } from '../../utils/auth'
 import { prisma } from '../../utils/db'
-import { auditData, readValidatedPayload } from '../../utils/validation'
+import { auditData, isUniqueViolation, readValidatedPayload } from '../../utils/validation'
 
 const schema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
     await tx.membership.create({ data: { unitId: created.id, userId: user.id } })
     await tx.auditEvent.create(auditData(user.id, 'unit_created', 'Unit', created.id, { code: created.code }))
     return created
+  }).catch((error) => {
+    if (isUniqueViolation(error)) throw createError({ statusCode: 409, statusMessage: 'Kode unit ini sudah dipakai unit lain.' })
+    throw error
   })
   return { unit }
 })
