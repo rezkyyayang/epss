@@ -96,7 +96,7 @@ async function createUser() {
       </section>
 
       <section class="panel" aria-labelledby="create-user-heading">
-        <div class="panel-header"><div><h2 id="create-user-heading">Tambah akun</h2><p>Kata sandi awal digunakan untuk masuk ke SectOra.</p></div></div>
+        <div class="panel-header"><div><h2 id="create-user-heading">Tambah akun</h2><p>Kata sandi awal digunakan untuk masuk ke Sectoral.</p></div></div>
         <form class="panel-body form-stack" @submit.prevent="createUser">
           <div class="form-grid">
             <div class="field"><label for="user-name">Nama</label><input id="user-name" v-model.trim="displayName" class="control" required maxlength="120" autocomplete="name"></div>

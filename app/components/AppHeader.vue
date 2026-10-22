@@ -25,7 +25,7 @@ defineExpose({ focusMenuButton })
       </button>
       <NuxtLink class="brand-lockup" :to="auth.user.value?.role === 'ADMIN' ? '/admin/dashboard' : '/user/dashboard'">
         <span class="brand-mark" aria-hidden="true">S</span>
-        <span>SectOra</span>
+        <span>Sectoral</span>
       </NuxtLink>
     </div>
     <div class="header-end">

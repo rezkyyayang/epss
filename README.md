@@ -1,6 +1,6 @@
-# SectOra
+# Sectoral
 
-SectOra is an Indonesian assessment and review application built with Nuxt, Prisma, and PostgreSQL. It follows the interaction patterns described in `Analisis_EPSS_BPS_dan_Rancangan_SectOra.md` and the interface direction in `design.md`. It uses its own SectOra identity and starts with an empty database.
+Sectoral is an Indonesian assessment and review application built with Nuxt, Prisma, and PostgreSQL. It follows the interaction patterns described in `Analisis_EPSS_BPS_dan_Rancangan_SectOra.md` and the interface direction in `design.md`. It uses its own Sectoral identity and starts with an empty database.
 
 ## Requirements
 
@@ -43,7 +43,7 @@ SectOra is an Indonesian assessment and review application built with Nuxt, Pris
 
    The script refuses to create a second bootstrap Admin. Additional accounts are created from the Admin screen, where an Admin can also deactivate an account or set a new password for it. Both changes sign that account out.
 
-5. Start SectOra:
+5. Start Sectoral:
 
    ```powershell
    npm run dev
@@ -66,7 +66,7 @@ Copy `.env.example` to `.env` for local development. Keep `.env` out of version 
 
 In production, set `APP_ORIGIN` to the externally served origin. The local loopback defaults only apply outside production.
 
-Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`https` links per indicator (for example Google Drive or OneDrive). SectOra stores only the URL, so access to the linked document is controlled by wherever it is hosted.
+Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`https` links per indicator (for example Google Drive or OneDrive). Sectoral stores only the URL, so access to the linked document is controlled by wherever it is hosted.
 
 ## Product behavior
 

@@ -11,13 +11,13 @@ export default defineNuxtConfig({
     sessionCookieName: 'sectora_session',
     sessionDurationHours: 12,
     public: {
-      appName: 'SectOra',
+      appName: 'Sectoral',
     },
   },
   app: {
     head: {
       htmlAttrs: { lang: 'id' },
-      title: 'SectOra',
+      title: 'Sectoral',
       meta: [
         { name: 'description', content: 'Penilaian dan pemeriksaan indikator internal.' },
         { name: 'theme-color', content: '#0B6470' },

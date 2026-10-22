@@ -7,7 +7,7 @@ definePageMeta({ layout: false })
     <header class="public-header">
       <NuxtLink class="brand-lockup" to="/home">
         <span class="brand-mark" aria-hidden="true">S</span>
-        <span>SectOra</span>
+        <span>Sectoral</span>
       </NuxtLink>
       <nav aria-label="Navigasi utama">
         <NuxtLink to="/pusat-bantuan">Pusat bantuan</NuxtLink>
@@ -18,13 +18,13 @@ definePageMeta({ layout: false })
       <div>
         <p class="public-kicker">Penilaian internal</p>
         <h1>Catat jawaban, bukti, dan tindak lanjut dalam satu alur.</h1>
-        <p class="public-lead">SectOra membantu staf mengisi indikator penilaian dan memberi Admin konteks yang sama saat memeriksa setiap jawaban.</p>
+        <p class="public-lead">Sectoral membantu staf mengisi indikator penilaian dan memberi Admin konteks yang sama saat memeriksa setiap jawaban.</p>
         <div class="heading-actions">
-          <NuxtLink class="btn btn-primary" to="/login">Masuk ke SectOra</NuxtLink>
+          <NuxtLink class="btn btn-primary" to="/login">Masuk ke Sectoral</NuxtLink>
           <NuxtLink class="btn btn-secondary" to="/pusat-bantuan">Baca panduan</NuxtLink>
         </div>
       </div>
-      <section class="public-workflow" aria-label="Ringkasan alur penilaian SectOra">
+      <section class="public-workflow" aria-label="Ringkasan alur penilaian Sectoral">
         <div class="workflow-line">
           <span class="workflow-number">01</span>
           <div><strong>User mengisi indikator</strong><span>Pilih tingkat kematangan dan tulis penjelasan.</span></div>
@@ -46,11 +46,11 @@ definePageMeta({ layout: false })
       </div>
       <div>
         <h2>Hasil mengikuti aturan internal</h2>
-        <p>SectOra tidak menetapkan rumus skor atau batas bukti. Admin mengatur katalog dan kebijakan sesuai kebutuhan organisasi.</p>
+        <p>Sectoral tidak menetapkan rumus skor atau batas bukti. Admin mengatur katalog dan kebijakan sesuai kebutuhan organisasi.</p>
       </div>
     </section>
     <footer class="public-footer">
-      <span>SectOra</span>
+      <span>Sectoral</span>
       <NuxtLink to="/pusat-bantuan">Pusat bantuan</NuxtLink>
     </footer>
   </main>

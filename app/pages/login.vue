@@ -31,7 +31,7 @@ async function signIn() {
     <aside class="auth-aside">
       <NuxtLink class="brand-lockup" to="/home">
         <span class="brand-mark" aria-hidden="true">S</span>
-        <span>SectOra</span>
+        <span>Sectoral</span>
       </NuxtLink>
       <div>
         <h1>Jawaban dan bukti, dalam satu alur.</h1>
@@ -42,7 +42,7 @@ async function signIn() {
     <main class="auth-main">
       <form class="auth-form" @submit.prevent="signIn">
         <div>
-          <h2>Masuk ke SectOra</h2>
+          <h2>Masuk ke Sectoral</h2>
           <p>Gunakan akun yang dibuat oleh Admin organisasi Anda.</p>
         </div>
         <div class="field">
@@ -58,7 +58,7 @@ async function signIn() {
         </button>
         <div class="auth-links">
           <NuxtLink to="/pusat-bantuan">Butuh bantuan?</NuxtLink>
-          <NuxtLink to="/home">Tentang SectOra</NuxtLink>
+          <NuxtLink to="/home">Tentang Sectoral</NuxtLink>
         </div>
       </form>
     </main>
