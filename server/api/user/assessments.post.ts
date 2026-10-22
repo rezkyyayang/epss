@@ -4,7 +4,13 @@ import { isCatalogReady } from '../../utils/catalog'
 import { prisma } from '../../utils/db'
 import { auditData, readValidatedPayload } from '../../utils/validation'
 
-const schema = z.object({ periodId: z.string().min(1).max(64), unitId: z.string().min(1).max(64) })
+const schema = z.object({
+  periodId: z.string().min(1).max(64),
+  unitId: z.string().min(1).max(64),
+  // Required to open a new assessment; ignored when the unit's assessment for the period already exists.
+  activityName: z.string().trim().min(3).max(240).optional(),
+  activityYear: z.number().int().min(2000).max(2100).optional(),
+})
 
 export default defineEventHandler(async (event) => {
   assertSameOrigin(event)
@@ -39,11 +45,16 @@ export default defineEventHandler(async (event) => {
     if (!isCatalogReady(period.domains)) {
       throw createError({ statusCode: 409, statusMessage: 'Katalog periode belum lengkap.' })
     }
+    if (!body.activityName || !body.activityYear) {
+      throw createError({ statusCode: 400, statusMessage: 'Isi nama dan tahun kegiatan statistik sebelum memulai penilaian.' })
+    }
     const created = await tx.assessment.create({
       data: {
         periodId: body.periodId,
         unitId: body.unitId,
         createdById: user.id,
+        activityName: body.activityName,
+        activityYear: body.activityYear,
         responses: { create: indicators.map(({ id }) => ({ indicatorId: id })) },
       },
     })

@@ -10,7 +10,6 @@ interface HistoryData {
     unit: { name: string; code: string }
     totalResponses: number
     completedResponses: number
-    revisionCount: number
   }>
 }
 
@@ -18,7 +17,7 @@ const { data, pending, error, refresh } = useFetch<HistoryData>('/api/user/dashb
 </script>
 
 <template>
-  <PageHeading title="Riwayat penilaian" subtitle="Lihat progres dan keputusan pada periode yang pernah Anda buka." />
+  <PageHeading title="Riwayat penilaian" subtitle="Lihat progres dan hasil verifikasi pada periode yang pernah Anda buka." />
   <LoadingState v-if="pending" label="Memuat riwayat..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Riwayat belum dapat dimuat.') }}
@@ -37,7 +36,6 @@ const { data, pending, error, refresh } = useFetch<HistoryData>('/api/user/dashb
           <NuxtLink class="btn btn-secondary btn-small" :to="`/user/assessments/${assessment.id}`">Lihat</NuxtLink>
         </div>
         <span class="record-meta">Diperbarui {{ formatDate(assessment.updatedAt) }}</span>
-        <span v-if="assessment.revisionCount" class="record-meta">{{ assessment.revisionCount }} indikator perlu revisi</span>
       </div>
     </div>
     <EmptyState v-else title="Riwayat masih kosong" message="Penilaian yang Anda buka akan tampil di sini." />

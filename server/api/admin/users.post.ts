@@ -20,11 +20,6 @@ export default defineEventHandler(async (event) => {
   if (body.role === 'USER' && !unitIds.length) {
     throw createError({ statusCode: 400, statusMessage: 'Akun User harus memiliki setidaknya satu unit.' })
   }
-  // Review access is scoped by unit, so an Admin may only hand out units they already hold.
-  const actorUnitIds = new Set(actor.memberships.map(({ id }) => id))
-  if (unitIds.some((unitId) => !actorUnitIds.has(unitId))) {
-    throw createError({ statusCode: 403, statusMessage: 'Anda hanya dapat memberikan unit yang termasuk dalam akses Anda.' })
-  }
   const existingUnits = await prisma.unit.count({ where: { id: { in: unitIds }, isActive: true } })
   if (existingUnits !== unitIds.length) {
     throw createError({ statusCode: 400, statusMessage: 'Pilih unit yang masih aktif.' })

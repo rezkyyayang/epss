@@ -1,55 +1,180 @@
 <script setup lang="ts">
-import { formatDate, getApiError } from '../../utils/format'
+import { getApiError } from '../../utils/format'
+import { formatScore, weightedScore, withFinalLevels, type DomainScore } from '../../utils/score'
 
-interface DashboardResult {
-  queue: Array<{ id: string; status: string; updatedAt: string; submittedAt: string | null; period: { name: string }; unit: { name: string } }>
-  counts: Record<string, number>
-  hasUnitAccess: boolean
+interface UnitResponse {
+  maturityLevelId: string | null
+  explanation: string
+  verification: { maturityLevelId: string } | null
+  indicator: { id: string; code: string; title: string; weight: number; maturityLevels: Array<{ id: string; level: number }>; domain: { id: string; name: string; weight: number; position: number } }
 }
+interface UnitRow {
+  unit: { id: string; name: string; code: string }
+  assessment: { id: string; status: string; activityName: string; activityYear: number | null; submittedAt: string | null; verifiedAt: string | null; responses: UnitResponse[] } | null
+}
+interface DashboardResult {
+  periods: Array<{ id: string; name: string; status: string }>
+  periodId: string | null
+  rows: UnitRow[]
+}
+type Score = ReturnType<typeof weightedScore>
+type ScoredRow = UnitRow & { verified: boolean; self: Score | null; final: Score | null }
 
-const { data, pending, error, refresh } = useFetch<DashboardResult>('/api/admin/dashboard', { lazy: true })
-const total = computed(() => Object.values(data.value?.counts || {}).reduce((sum, value) => sum + value, 0))
-const waiting = computed(() => (data.value?.counts.SUBMITTED || 0) + (data.value?.counts.RESUBMITTED || 0) + (data.value?.counts.IN_REVIEW || 0))
+const selectedPeriodId = ref('')
+const { data, pending, error, refresh } = useFetch<DashboardResult>('/api/admin/dashboard', {
+  lazy: true,
+  query: computed(() => (selectedPeriodId.value ? { periodId: selectedPeriodId.value } : {})),
+})
+watch(() => data.value?.periodId, (value: string | null | undefined) => {
+  if (value && !selectedPeriodId.value) selectedPeriodId.value = value
+}, { immediate: true })
+
+// Each unit is scored twice: the unit's own levels, and Pusdatin's final levels once verification is sent.
+const scoredRows = computed((): ScoredRow[] => (data.value?.rows || []).map((row: UnitRow) => {
+  const responses = row.assessment?.responses || []
+  const verified = row.assessment?.status === 'VERIFIED'
+  return {
+    ...row,
+    verified,
+    self: responses.length ? weightedScore(responses) : null,
+    final: verified ? weightedScore(withFinalLevels(responses)) : null,
+  }
+}))
+const counts = computed(() => {
+  const rows = scoredRows.value
+  return {
+    assigned: rows.length,
+    notSubmitted: rows.filter((row: ScoredRow) => !row.assessment || row.assessment.status === 'DRAFT').length,
+    waiting: rows.filter((row: ScoredRow) => row.assessment?.status === 'SUBMITTED' || row.assessment?.status === 'IN_REVIEW').length,
+    verified: rows.filter((row: ScoredRow) => row.verified).length,
+  }
+})
+
+const selectedUnitId = ref('')
+const selectedRow = computed((): ScoredRow | undefined => {
+  const rows = scoredRows.value.filter((row: ScoredRow) => row.self)
+  return rows.find((row: ScoredRow) => row.unit.id === selectedUnitId.value) ?? rows.find((row: ScoredRow) => row.verified) ?? rows[0]
+})
+const selectedScore = computed(() => selectedRow.value?.final ?? selectedRow.value?.self ?? null)
+const selectedHasGap = computed(() => Boolean(selectedScore.value?.domains.some((domain: DomainScore) => domain.score === null)))
+
+function total(score: { total: number | null } | null) {
+  return score?.total === null || score?.total === undefined ? '-' : formatScore(score.total)
+}
+function domainValue(score: { domains: DomainScore[] } | null, domainId: string) {
+  const value = score?.domains.find(({ id }) => id === domainId)?.score
+  return value === null || value === undefined ? '-' : formatScore(value)
+}
 </script>
 
 <template>
-  <PageHeading title="Dashboard Admin" subtitle="Pantau pemeriksaan, periode, dan penilaian yang dikelola di SectOra." />
-  <LoadingState v-if="pending" label="Memuat ringkasan..." />
+  <PageHeading title="Dashboard Admin" subtitle="Hasil penilaian mandiri dan verifikasi Pusdatin untuk setiap unit kerja." />
+  <LoadingState v-if="pending && !data" label="Memuat ringkasan..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Ringkasan belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>
   </NoticeBanner>
   <div v-else class="section-stack">
-    <NoticeBanner v-if="!data?.hasUnitAccess" tone="info">Akun ini belum ditugaskan ke unit. Buka Pengguna dan unit untuk menetapkan cakupan pemeriksaan.</NoticeBanner>
-    <section class="stats-grid" aria-label="Ringkasan penilaian">
-      <article class="panel stat-card"><span>Total penilaian</span><strong>{{ total }}</strong><span>Seluruh status</span></article>
-      <article class="panel stat-card"><span>Dalam pemeriksaan</span><strong>{{ waiting }}</strong><span>Menunggu atau sedang diperiksa</span></article>
-      <article class="panel stat-card"><span>Perlu revisi</span><strong>{{ data?.counts.REVISION_REQUIRED || 0 }}</strong><span>Menunggu perbaikan dari User</span></article>
-      <article class="panel stat-card"><span>Disetujui</span><strong>{{ data?.counts.APPROVED || 0 }}</strong><span>Pemeriksaan selesai</span></article>
-    </section>
-
-    <section class="panel" aria-labelledby="recent-queue-heading">
-      <div class="panel-header">
-        <div><h2 id="recent-queue-heading">Pemeriksaan terbaru</h2><p>Daftar ini menampilkan penilaian yang dikirim atau sedang diperiksa.</p></div>
-        <NuxtLink class="btn btn-secondary btn-small" to="/admin/queue">Buka antrean</NuxtLink>
-      </div>
-      <div v-if="data?.queue.length" class="record-list">
-        <div v-for="item in data.queue" :key="item.id" class="record-row">
-          <div class="record-primary"><strong>{{ item.period.name }}</strong><span>{{ item.unit.name }}</span></div>
-          <span class="record-meta">Dikirim {{ formatDate(item.submittedAt) }}</span>
-          <StatusBadge :status="item.status" />
-          <div class="record-action"><NuxtLink class="btn btn-secondary btn-small" :to="`/admin/assessments/${item.id}`">Periksa</NuxtLink></div>
+    <EmptyState
+      v-if="!data?.periods.length"
+      title="Belum ada periode"
+      message="Buat periode, susun katalognya, lalu tugaskan unit kerja agar hasil penilaian muncul di sini."
+      action-label="Kelola periode"
+      action-to="/admin/periods"
+    />
+    <template v-else>
+      <div class="filters-row dashboard-filters">
+        <div class="field">
+          <label for="dashboard-period">Periode</label>
+          <select id="dashboard-period" v-model="selectedPeriodId" class="control">
+            <option v-for="period in data.periods" :key="period.id" :value="period.id">{{ period.name }}</option>
+          </select>
         </div>
       </div>
-      <EmptyState v-else-if="data?.hasUnitAccess" title="Antrean masih kosong" message="Penilaian yang dikirim akan muncul di sini untuk diperiksa." />
-    </section>
 
-    <section class="panel panel-body admin-shortcuts">
-      <div><h2 class="section-title">Pengaturan</h2><p class="section-note">Siapkan periode, katalog indikator berbobot, akun, dan unit.</p></div>
-      <nav aria-label="Pengaturan Admin">
-        <NuxtLink class="btn btn-secondary" to="/admin/periods">Kelola periode</NuxtLink>
-        <NuxtLink class="btn btn-secondary" to="/admin/indicators">Kelola katalog</NuxtLink>
-        <NuxtLink class="btn btn-secondary" to="/admin/users">Pengguna dan unit</NuxtLink>      </nav>
-    </section>
+      <section class="stats-grid" aria-label="Ringkasan periode">
+        <article class="panel stat-card"><span>Unit ditugaskan</span><strong>{{ counts.assigned }}</strong><span>Pada periode ini</span></article>
+        <article class="panel stat-card"><span>Belum dikirim</span><strong>{{ counts.notSubmitted }}</strong><span>Belum mulai atau masih draf</span></article>
+        <article class="panel stat-card"><span>Menunggu verifikasi</span><strong>{{ counts.waiting }}</strong><span>Sudah dikirim unit kerja</span></article>
+        <article class="panel stat-card"><span>Terverifikasi</span><strong>{{ counts.verified }}</strong><span>Hasil final sudah dikirim</span></article>
+      </section>
+
+      <section class="panel" aria-labelledby="unit-scores-heading">
+        <div class="panel-header">
+          <div><h2 id="unit-scores-heading">Nilai per unit kerja</h2><p>Pilih unit untuk melihat nilai per domain dan radar chart-nya.</p></div>
+          <NuxtLink class="btn btn-secondary btn-small" to="/admin/queue">Antrean verifikasi</NuxtLink>
+        </div>
+        <div v-if="scoredRows.length" class="data-table-wrap mobile-records">
+          <table class="data-table unit-score-table">
+            <thead><tr><th scope="col">Unit kerja</th><th scope="col">Kegiatan statistik</th><th scope="col">Status</th><th scope="col" class="numeric">Nilai mandiri</th><th scope="col" class="numeric">Nilai final</th><th scope="col">Aksi</th></tr></thead>
+            <tbody>
+              <tr v-for="row in scoredRows" :key="row.unit.id" :class="{ 'is-selected': selectedRow?.unit.id === row.unit.id }">
+                <td data-label="Unit kerja"><div><strong>{{ row.unit.name }}</strong><br><span class="record-meta">{{ row.unit.code }}</span></div></td>
+                <td data-label="Kegiatan"><div>{{ row.assessment?.activityName || '-' }}<span v-if="row.assessment?.activityYear" class="record-meta"> ({{ row.assessment.activityYear }})</span></div></td>
+                <td data-label="Status"><StatusBadge v-if="row.assessment" :status="row.assessment.status" /><span v-else class="record-meta">Belum mulai</span></td>
+                <td data-label="Nilai mandiri" class="numeric">{{ total(row.self) }}</td>
+                <td data-label="Nilai final" class="numeric"><strong>{{ total(row.final) }}</strong></td>
+                <td data-label="Aksi">
+                  <div class="table-actions">
+                    <button v-if="row.self" class="btn btn-quiet btn-small" type="button" :aria-pressed="selectedRow?.unit.id === row.unit.id" @click="selectedUnitId = row.unit.id">Lihat grafik</button>
+                    <NuxtLink v-if="row.assessment && row.assessment.status !== 'DRAFT'" class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.assessment.id}`">{{ row.verified ? 'Hasil' : 'Verifikasi' }}</NuxtLink>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <EmptyState v-else title="Belum ada unit ditugaskan" message="Tugaskan unit kerja ke periode ini dari halaman pengaturan periode." action-label="Kelola periode" action-to="/admin/periods" />
+      </section>
+
+      <section v-if="selectedRow && selectedScore" class="panel" aria-labelledby="unit-detail-heading">
+        <div class="panel-header score-header">
+          <div>
+            <h2 id="unit-detail-heading">{{ selectedRow.unit.name }}</h2>
+            <p>{{ selectedRow.verified ? 'Nilai final hasil verifikasi Pusdatin.' : 'Nilai mandiri dari unit kerja. Nilai final muncul setelah verifikasi dikirim.' }}</p>
+          </div>
+          <div class="score-actions">
+            <StatusBadge v-if="selectedRow.assessment" :status="selectedRow.assessment.status" />
+          </div>
+        </div>
+        <div class="score-layout">
+          <div class="score-table-block">
+            <p class="score-total-chip" :class="{ 'is-pending': selectedScore.total === null }">
+              <template v-if="selectedScore.total !== null">{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(selectedScore.total) }} dari {{ selectedScore.maxLevel }}</template>
+              <template v-else>Nilai total muncul setelah semua indikator memiliki level</template>
+            </p>
+            <div class="data-table-wrap">
+              <table class="data-table score-table">
+                <thead><tr><th scope="col">Domain</th><th scope="col" class="numeric">Bobot</th><th scope="col" class="numeric">Mandiri</th><th v-if="selectedRow.verified" scope="col" class="numeric">Final</th></tr></thead>
+                <tbody>
+                  <tr v-for="(domain, index) in selectedScore.domains" :key="domain.id">
+                    <td>{{ index + 1 }}. {{ domain.name }}</td>
+                    <td class="numeric">{{ domain.weight }}%</td>
+                    <td class="numeric">{{ domainValue(selectedRow.self, domain.id) }}</td>
+                    <td v-if="selectedRow.verified" class="numeric"><strong>{{ domainValue(selectedRow.final, domain.id) }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <figure class="score-chart">
+            <RadarChart :domains="selectedScore.domains" :max="selectedScore.maxLevel" />
+            <figcaption>
+              {{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ selectedRow.unit.code }} pada skala 0 sampai {{ selectedScore.maxLevel }}.
+              <template v-if="selectedHasGap">Domain yang belum lengkap tampil di titik nol.</template>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="panel panel-body admin-shortcuts">
+        <div><h2 class="section-title">Pengaturan</h2><p class="section-note">Siapkan periode, katalog indikator berbobot, akun, dan unit.</p></div>
+        <nav aria-label="Pengaturan Admin">
+          <NuxtLink class="btn btn-secondary" to="/admin/periods">Kelola periode</NuxtLink>
+          <NuxtLink class="btn btn-secondary" to="/admin/indicators">Kelola katalog</NuxtLink>
+          <NuxtLink class="btn btn-secondary" to="/admin/users">Pengguna dan unit</NuxtLink>
+        </nav>
+      </section>
+    </template>
   </div>
 </template>

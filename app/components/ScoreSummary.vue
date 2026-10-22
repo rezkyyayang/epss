@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { formatScore, weightedScore } from '../utils/score'
 
-const props = defineProps<{ responses: Parameters<typeof weightedScore>[0] }>()
+const props = withDefaults(defineProps<{ responses: Parameters<typeof weightedScore>[0]; label?: string }>(), { label: 'Nilai tertimbang' })
 const result = computed(() => weightedScore(props.responses))
 </script>
 
 <template>
   <div class="score-summary">
     <div class="score-total">
-      <strong>Nilai tertimbang</strong>
+      <strong>{{ props.label }}</strong>
       <template v-if="result.total !== null">
         <span class="score-value">{{ formatScore(result.total) }}</span>
         <span class="field-hint">dari {{ result.maxLevel }}</span>

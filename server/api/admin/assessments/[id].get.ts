@@ -19,9 +19,8 @@ export default defineEventHandler(async (event) => {
           },
           maturityLevel: true,
           evidence: { orderBy: { createdAt: 'asc' }, select: { id: true, url: true, createdAt: true } },
-          decisions: {
-            orderBy: { createdAt: 'desc' },
-            include: { reviewer: { select: { displayName: true } } },
+          verification: {
+            select: { maturityLevelId: true, comment: true, updatedAt: true, verifier: { select: { displayName: true } } },
           },
         },
       },

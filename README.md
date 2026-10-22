@@ -51,7 +51,7 @@ SectOra is an Indonesian assessment and review application built with Nuxt, Pris
 
    Open `http://localhost:3000`.
 
-The first Admin can configure periods, indicators, accounts, and units. Creating a unit grants the creating Admin access to review assessments for that unit. Assign User accounts and Admin reviewers to units from the account form. Review queues and evidence downloads are checked against those unit memberships on every API request.
+The first Admin can configure periods, indicators, accounts, and units. Admins are Pusdatin staff: they see and verify every unit's assessment. Assign each User account to its unit from the account form; a User sees only the units it belongs to.
 
 ## Runtime settings
 
@@ -71,11 +71,12 @@ Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`ht
 ## Product behavior
 
 - User accounts can access only their assigned units and assessments they created.
-- Admins can configure system records. Review actions and evidence downloads are limited to their assigned units.
+- Flow: the unit names its one statistical activity for the period (name and year), fills a level, an explanation and evidence links per indicator, and submits. Submitting locks the answers.
+- Admins (Pusdatin) see every unit. For each indicator they set a final level and a verification comment, then send the verification result, which locks it and shows the final scores to the unit.
 - Unit assignment and indicator catalogs lock when the first assessment for a period is created.
 - Each period's catalog is Domain → Indicator → maturity levels (2 to 5). Domains and indicators carry whole-percent weights: domain weights in a period total 100, and indicator weights in each domain total 100. The catalog editor can fill in the standard catalog (5 domains, 13 indicators, 3 levels each).
-- The weighted score is the sum of (domain weight × sum of (indicator weight × chosen level)). It appears only when every indicator has a saved level.
-- Review decisions apply to one indicator response version. A requested revision must include a reason; status and audit events are stored in PostgreSQL.
+- The weighted score is the sum of (domain weight × sum of (indicator weight × chosen level)). It appears only when every indicator has a saved level. The self-assessment score uses the unit's levels; the final score uses Pusdatin's verified levels.
+- Statuses: Draf → Menunggu verifikasi → Dalam verifikasi → Terverifikasi. There is no revision round; status and audit events are stored in PostgreSQL.
 - There is no sample submission or score seed.
 
 Password reset, SSO, notifications, data retention, reopening approved assessments, and exports are not implemented yet.

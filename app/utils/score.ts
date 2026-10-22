@@ -32,6 +32,15 @@ export function weightedScore(responses: ScoredResponse[]) {
   return { total, maxLevel, domains: scored }
 }
 
+// Scores Pusdatin's verified levels with the same formula: each response is read through its verification.
+export function withFinalLevels<T extends { verification?: { maturityLevelId: string } | null }>(responses: T[]) {
+  return responses.map((response) => ({ ...response, maturityLevelId: response.verification?.maturityLevelId ?? null }))
+}
+
+export function levelOf(response: { maturityLevelId: string | null; indicator: { maturityLevels: Array<{ id: string; level: number }> } }) {
+  return response.indicator.maturityLevels.find(({ id }) => id === response.maturityLevelId)?.level ?? null
+}
+
 export function formatScore(value: number) {
   return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 }

@@ -16,12 +16,8 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedPayload(event, schema)
   const { user, response } = await requireOwnedResponse(event, id)
   const assessment = response.assessment
-  if (!['DRAFT', 'REVISION_REQUIRED'].includes(assessment.status)) {
-    throw createError({ statusCode: 409, statusMessage: 'Jawaban terkunci setelah dikirim.' })
-  }
-
-  if (!canEditResponse(assessment.status, response.status)) {
-    throw createError({ statusCode: 403, statusMessage: 'Hanya jawaban yang perlu revisi yang dapat diubah.' })
+  if (!canEditResponse(assessment.status)) {
+    throw createError({ statusCode: 409, statusMessage: 'Jawaban terkunci setelah penilaian dikirim.' })
   }
   if (response.version !== body.expectedVersion) {
     throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menyimpan.' })
@@ -36,16 +32,18 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${assessment.id} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const current = await tx.assessmentResponse.findUnique({ where: { id }, select: { id: true, version: true, status: true } })
+    const current = await tx.assessmentResponse.findUnique({ where: { id }, select: { version: true, assessment: { select: { status: true } } } })
     if (!current || current.version !== body.expectedVersion) {
       throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menyimpan.' })
     }
+    if (!canEditResponse(current.assessment.status)) {
+      throw createError({ statusCode: 409, statusMessage: 'Jawaban terkunci setelah penilaian dikirim.' })
+    }
     const changed = await tx.assessmentResponse.updateMany({
-      where: { id, version: body.expectedVersion, status: current.status },
+      where: { id, version: body.expectedVersion },
       data: {
         maturityLevelId: body.maturityLevelId,
         explanation: body.explanation,
-        status: current.status === 'NEEDS_REVISION' ? 'PENDING' : current.status,
         version: { increment: 1 },
       },
     })

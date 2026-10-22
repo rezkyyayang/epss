@@ -7,12 +7,7 @@ const [{ data: unitData, refresh: refreshUnits, pending: unitsPending, error: un
   useFetch<{ units: UnitRow[] }>('/api/admin/units', { lazy: true }),
   useFetch<{ users: UserRow[] }>('/api/admin/users', { lazy: true }),
 ]
-const auth = useAuth()
-// The server only accepts units the signed-in Admin holds, so the picker lists those.
-const grantableUnits = computed(() => {
-  const heldUnitIds = new Set((auth.user.value?.memberships || []).map(({ id }) => id))
-  return (unitData.value?.units || []).filter((unit) => unit.isActive && heldUnitIds.has(unit.id))
-})
+const grantableUnits = computed(() => (unitData.value?.units || []).filter((unit) => unit.isActive))
 const listsPending = computed(() => unitsPending.value || usersPending.value)
 const listsError = computed(() => unitsError.value || usersError.value)
 const unitName = ref('')
@@ -35,7 +30,7 @@ async function createUnit() {
   try {
     await $fetch('/api/admin/units', { method: 'POST', body: { name: unitName.value, code: unitCode.value } })
     unitName.value = ''; unitCode.value = ''; message.value = 'Unit berhasil dibuat.'
-    await Promise.all([refreshUnits(), auth.refresh()])
+    await refreshUnits()
   } catch (error) { pageError.value = getApiError(error, 'Unit belum dapat dibuat.') }
   finally { saving.value = false }
 }
@@ -86,11 +81,10 @@ async function createUser() {
             <legend class="field-label">Unit yang dapat diakses</legend>
             <div class="check-list">
               <label v-for="unit in grantableUnits" :key="unit.id" class="check-row"><input v-model="selectedUnitIds" type="checkbox" :value="unit.id"><span>{{ unit.name }} · {{ unit.code }}</span></label>
-              <p v-if="!grantableUnits.length" class="field-hint">Anda belum memegang unit aktif. Buat unit baru agar dapat memberikannya ke akun lain.</p>
-              <p v-else class="field-hint">Hanya unit yang termasuk dalam akses Anda yang dapat diberikan.</p>
+              <p v-if="!grantableUnits.length" class="field-hint">Belum ada unit aktif. Tambahkan unit terlebih dahulu.</p>
             </div>
           </fieldset>
-          <p v-if="role === 'ADMIN'" class="field-hint">Admin dapat mengelola pengaturan. Keputusan pemeriksaan hanya tersedia pada unit yang dipilih.</p>
+          <p v-if="role === 'ADMIN'" class="field-hint">Admin (Pusdatin) mengelola pengaturan dan memverifikasi penilaian semua unit kerja, sehingga tidak perlu memilih unit.</p>
           <div class="form-actions"><button class="btn btn-primary" type="submit" :disabled="saving || (role === 'USER' && selectedUnitIds.length === 0)">{{ saving ? 'Menyimpan...' : 'Buat akun' }}</button></div>
         </form>
       </section>
@@ -104,7 +98,7 @@ async function createUser() {
 
     <section class="panel">
       <div class="panel-header"><div><h2>Akun terdaftar</h2><p>Keanggotaan menentukan unit yang tersedia bagi User.</p></div></div>
-      <div v-if="userData?.users.length" class="data-table-wrap mobile-records"><table class="data-table"><thead><tr><th>Nama</th><th>Peran</th><th>Unit</th><th>Dibuat</th></tr></thead><tbody><tr v-for="account in userData.users" :key="account.id"><td data-label="Nama"><strong>{{ account.displayName }}</strong><br>{{ account.email }}</td><td data-label="Peran">{{ account.role === 'ADMIN' ? 'Admin' : 'User' }} · {{ account.isActive ? 'Aktif' : 'Nonaktif' }}</td><td data-label="Unit">{{ account.memberships.map(({ unit }) => `${unit.name} · ${unit.code}`).join(', ') || (account.role === 'ADMIN' ? 'Belum diberi cakupan unit' : 'Belum ditugaskan') }}</td><td data-label="Dibuat">{{ formatDate(account.createdAt) }}</td></tr></tbody></table></div>
+      <div v-if="userData?.users.length" class="data-table-wrap mobile-records"><table class="data-table"><thead><tr><th>Nama</th><th>Peran</th><th>Unit</th><th>Dibuat</th></tr></thead><tbody><tr v-for="account in userData.users" :key="account.id"><td data-label="Nama"><strong>{{ account.displayName }}</strong><br>{{ account.email }}</td><td data-label="Peran">{{ account.role === 'ADMIN' ? 'Admin' : 'User' }} · {{ account.isActive ? 'Aktif' : 'Nonaktif' }}</td><td data-label="Unit">{{ account.memberships.map(({ unit }) => `${unit.name} · ${unit.code}`).join(', ') || (account.role === 'ADMIN' ? 'Semua unit (Pusdatin)' : 'Belum ditugaskan') }}</td><td data-label="Dibuat">{{ formatDate(account.createdAt) }}</td></tr></tbody></table></div>
       <EmptyState v-else title="Belum ada akun" message="Akun yang Anda buat akan muncul di sini." />
     </section>
   </div>

@@ -27,11 +27,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Tautan harus diawali http:// atau https://, misalnya https://drive.google.com/...' })
   }
   const { user, response } = await requireOwnedResponse(event, id)
-  if (!['DRAFT', 'REVISION_REQUIRED'].includes(response.assessment.status)) {
+  if (!canEditResponse(response.assessment.status)) {
     throw createError({ statusCode: 409, statusMessage: 'Bukti terkunci setelah penilaian dikirim.' })
-  }
-  if (!canEditResponse(response.assessment.status, response.status)) {
-    throw createError({ statusCode: 403, statusMessage: 'Bukti hanya dapat diubah pada indikator yang perlu revisi.' })
   }
 
   const evidence = await prisma.$transaction(async (tx) => {
@@ -39,12 +36,12 @@ export default defineEventHandler(async (event) => {
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
     const current = await tx.assessmentResponse.findUnique({
       where: { id },
-      select: { id: true, version: true, status: true, assessment: { select: { status: true } }, evidence: { select: { url: true } } },
+      select: { id: true, version: true, assessment: { select: { status: true } }, evidence: { select: { url: true } } },
     })
     if (!current || current.version !== response.version) {
       throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menambah tautan.' })
     }
-    if (!canEditResponse(current.assessment.status, current.status)) {
+    if (!canEditResponse(current.assessment.status)) {
       throw createError({ statusCode: 409, statusMessage: 'Bukti terkunci setelah penilaian dikirim.' })
     }
     if (current.evidence.length >= maxEvidenceLinks) {
@@ -54,11 +51,8 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, statusMessage: 'Tautan ini sudah ada pada indikator ini.' })
     }
     const changed = await tx.assessmentResponse.updateMany({
-      where: { id, version: response.version, status: current.status },
-      data: {
-        version: { increment: 1 },
-        status: current.status === 'NEEDS_REVISION' ? 'PENDING' : current.status,
-      },
+      where: { id, version: response.version },
+      data: { version: { increment: 1 } },
     })
     if (changed.count !== 1) throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menambah tautan.' })
     const created = await tx.evidence.create({ data: { responseId: id, addedById: user.id, url } })

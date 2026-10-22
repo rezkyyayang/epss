@@ -3,11 +3,14 @@ import type { H3Event } from 'h3'
 import { requireRole, requireUnitAccess } from './auth'
 import { prisma } from './db'
 
-// During a revision round every response that is not approved was returned to the User.
-// Its status leaves NEEDS_REVISION after the first edit, so checking for NEEDS_REVISION alone would lock it again.
-export function canEditResponse(assessmentStatus: string, responseStatus: string) {
-  if (assessmentStatus === 'DRAFT') return true
-  return assessmentStatus === 'REVISION_REQUIRED' && responseStatus !== 'APPROVED'
+// A unit edits its answers only while the assessment is a draft; submitting hands it to Pusdatin for good.
+export function canEditResponse(assessmentStatus: string) {
+  return assessmentStatus === 'DRAFT'
+}
+
+// Pusdatin verifies only after the unit has submitted, and stops once the verification result is sent.
+export function canVerify(assessmentStatus: string) {
+  return assessmentStatus === 'SUBMITTED' || assessmentStatus === 'IN_REVIEW'
 }
 
 export async function requireOwnedAssessment(event: H3Event, assessmentId: string) {
@@ -36,6 +39,7 @@ export async function requireOwnedResponse(event: H3Event, responseId: string) {
   return { ...current, response }
 }
 
+// Admins are Pusdatin staff who verify every unit, so access is by role alone.
 export async function requireAssessmentReviewAccess(event: H3Event, assessmentId: string) {
   const current = await requireRole(event, 'ADMIN')
   const assessment = await prisma.assessment.findUnique({
@@ -43,6 +47,5 @@ export async function requireAssessmentReviewAccess(event: H3Event, assessmentId
     select: { id: true, unitId: true, status: true, periodId: true },
   })
   if (!assessment) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-  await requireUnitAccess(event, assessment.unitId)
   return { ...current, assessment }
 }

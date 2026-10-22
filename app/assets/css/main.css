@@ -2044,7 +2044,12 @@ textarea.control {
 }
 
 .review-decision {
-  grid-template-columns: minmax(180px, 0.5fr) minmax(240px, 1.5fr);
+  grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.2fr);
+}
+
+/* The level select keeps its own height next to the taller comment box. */
+.review-decision .field {
+  align-content: start;
 }
 
 .review-decision .form-actions {
@@ -2238,6 +2243,25 @@ textarea.control {
   }
 }
 
+/* The one statistical activity per assessment: a wide name field, a short year field, then save. */
+.activity-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.activity-summary {
+  margin: 0;
+  font-size: 15px;
+}
+
+@media (max-width: 560px) {
+  .activity-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* User dashboard: assignments beside a progress card, then the score table beside its radar chart. */
 .dashboard-overview {
   display: grid;
@@ -2293,6 +2317,67 @@ textarea.control {
   flex-shrink: 0;
   align-items: center;
   gap: 12px;
+}
+
+/* Starting an assessment asks for the activity in place, under the period it belongs to. */
+.assignment-item.is-starting {
+  flex-direction: column;
+  align-items: stretch;
+  background: #f7f9fa;
+}
+
+.start-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 12px;
+}
+
+.start-form-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.score-compare {
+  justify-self: end;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.indicator-score-table .numeric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.indicator-code {
+  color: var(--brand);
+  font-weight: 640;
+}
+
+.dashboard-filters {
+  max-width: 360px;
+}
+
+.unit-score-table .numeric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* The unit whose radar is shown below keeps a brand edge so the table and chart read as one. */
+.unit-score-table tr.is-selected td {
+  background: #eef6f7;
+}
+
+.unit-score-table tr.is-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* The one filled surface on the page: it answers "how far along am I" before anything else. */
@@ -2470,6 +2555,13 @@ textarea.control {
   }
 }
 
+/* In the card layout the label sits on the left, so numbers read left-aligned like the other values. */
+@media (max-width: 780px) {
+  .mobile-records .data-table td.numeric {
+    text-align: left;
+  }
+}
+
 @media (max-width: 560px) {
   .assignment-item {
     flex-direction: column;
@@ -2483,6 +2575,10 @@ textarea.control {
   .score-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .start-form {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .score-actions {

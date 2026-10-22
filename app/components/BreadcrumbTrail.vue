@@ -6,7 +6,7 @@ const names: Record<string, string> = {
   user: 'User',
   dashboard: 'Dashboard',
   history: 'Riwayat penilaian',
-  queue: 'Antrean pemeriksaan',
+  queue: 'Antrean verifikasi',
   periods: 'Periode',
   indicators: 'Indikator',
   users: 'Pengguna dan unit',

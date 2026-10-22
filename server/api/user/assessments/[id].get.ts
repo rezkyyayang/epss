@@ -21,16 +21,20 @@ export default defineEventHandler(async (event) => {
           },
           maturityLevel: true,
           evidence: { orderBy: { createdAt: 'asc' }, select: { id: true, url: true, createdAt: true } },
-          decisions: {
-            orderBy: { createdAt: 'desc' },
-            take: 3,
-            include: { reviewer: { select: { displayName: true } } },
-          },
+          verification: { select: { maturityLevelId: true, comment: true, updatedAt: true } },
         },
       },
       statusEvents: { orderBy: { createdAt: 'desc' }, take: 20 },
     },
   })
   if (!assessment) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-  return { assessment, maxEvidenceLinks }
+  // Pusdatin's levels and comments are a draft until the verification result is sent.
+  const verified = assessment.status === 'VERIFIED'
+  return {
+    assessment: {
+      ...assessment,
+      responses: assessment.responses.map((response) => ({ ...response, verification: verified ? response.verification : null })),
+    },
+    maxEvidenceLinks,
+  }
 })

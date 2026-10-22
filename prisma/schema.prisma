@@ -21,24 +21,13 @@ enum PeriodStatus {
   CLOSED
 }
 
+// DRAFT: the unit fills it in. SUBMITTED: sent to Pusdatin. IN_REVIEW: verification has started.
+// VERIFIED: the Admin sent the verification result; both sides are read-only from here.
 enum AssessmentStatus {
   DRAFT
   SUBMITTED
   IN_REVIEW
-  REVISION_REQUIRED
-  RESUBMITTED
-  APPROVED
-}
-
-enum ResponseStatus {
-  PENDING
-  NEEDS_REVISION
-  APPROVED
-}
-
-enum ReviewOutcome {
-  APPROVE
-  REQUEST_REVISION
+  VERIFIED
 }
 
 model User {
@@ -54,7 +43,7 @@ model User {
   sessions         Session[]
   createdAssessments Assessment[]  @relation("AssessmentCreator")
   addedEvidence    Evidence[]      @relation("EvidenceAuthor")
-  reviewDecisions  ReviewDecision[]
+  verifications    ResponseVerification[]
   statusEvents     StatusEvent[]
   auditEvents      AuditEvent[]
 
@@ -175,6 +164,7 @@ model MaturityLevel {
   criterion   String
   indicator   Indicator  @relation(fields: [indicatorId], references: [id], onDelete: Restrict)
   responses   AssessmentResponse[]
+  verifications ResponseVerification[]
 
   @@unique([indicatorId, level])
   @@index([indicatorId, level])
@@ -185,9 +175,12 @@ model Assessment {
   periodId         String
   unitId           String
   createdById      String
+  // The one statistical activity this unit assesses in the period (unique per period and unit).
+  activityName     String           @default("")
+  activityYear     Int?
   status           AssessmentStatus @default(DRAFT)
   submittedAt      DateTime?
-  approvedAt       DateTime?
+  verifiedAt       DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   period           Period           @relation(fields: [periodId], references: [id], onDelete: Restrict)
@@ -208,17 +201,15 @@ model AssessmentResponse {
   indicatorId       String
   maturityLevelId   String?
   explanation       String          @default("")
-  status            ResponseStatus  @default(PENDING)
   version           Int             @default(1)
   updatedAt         DateTime        @updatedAt
   assessment        Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   indicator         Indicator      @relation(fields: [indicatorId], references: [id], onDelete: Restrict)
   maturityLevel     MaturityLevel? @relation(fields: [maturityLevelId], references: [id], onDelete: Restrict)
   evidence          Evidence[]
-  decisions         ReviewDecision[]
+  verification      ResponseVerification?
 
   @@unique([assessmentId, indicatorId])
-  @@index([assessmentId, status])
 }
 
 model Evidence {
@@ -233,19 +224,20 @@ model Evidence {
   @@index([responseId, createdAt])
 }
 
-model ReviewDecision {
-  id              String       @id @default(cuid())
-  responseId      String
-  reviewerId      String
-  outcome         ReviewOutcome
-  comment         String       @default("")
-  reviewedVersion Int
-  createdAt       DateTime     @default(now())
+// Pusdatin's verified result for one indicator: the final maturity level and a comment for the unit.
+model ResponseVerification {
+  id              String             @id @default(cuid())
+  responseId      String             @unique
+  maturityLevelId String
+  comment         String             @default("")
+  verifierId      String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   response        AssessmentResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
-  reviewer        User         @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  maturityLevel   MaturityLevel      @relation(fields: [maturityLevelId], references: [id], onDelete: Restrict)
+  verifier        User               @relation(fields: [verifierId], references: [id], onDelete: Restrict)
 
-  @@unique([responseId, reviewedVersion])
-  @@index([reviewerId, createdAt])
+  @@index([verifierId, updatedAt])
 }
 
 model StatusEvent {

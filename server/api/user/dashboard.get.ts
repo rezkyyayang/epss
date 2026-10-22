@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
       include: {
         period: { select: { id: true, name: true, status: true, endsAt: true } },
         unit: { select: { id: true, name: true, code: true } },
-        responses: { select: { id: true, status: true, maturityLevelId: true, explanation: true } },
+        responses: { select: { id: true, maturityLevelId: true, explanation: true } },
       },
     }),
   ])
@@ -34,10 +34,15 @@ export default defineEventHandler(async (event) => {
   const focusResponses = focusAssessment
     ? await prisma.assessmentResponse.findMany({
         where: { assessmentId: focusAssessment.id },
+        orderBy: [{ indicator: { domain: { position: 'asc' } } }, { indicator: { position: 'asc' } }],
         select: {
           maturityLevelId: true,
+          verification: { select: { maturityLevelId: true, comment: true } },
           indicator: {
             select: {
+              id: true,
+              code: true,
+              title: true,
               weight: true,
               maturityLevels: { select: { id: true, level: true } },
               domain: { select: { id: true, name: true, weight: true, position: true } },
@@ -46,16 +51,26 @@ export default defineEventHandler(async (event) => {
         },
       })
     : []
+  // Final levels stay hidden until Pusdatin sends the verification result.
+  const verified = focusAssessment?.status === 'VERIFIED'
 
   return {
     user,
     available,
-    focus: focusAssessment ? { assessmentId: focusAssessment.id, responses: focusResponses } : null,
+    focus: focusAssessment
+      ? {
+          assessmentId: focusAssessment.id,
+          verified,
+          responses: focusResponses.map(({ verification, ...response }) => ({
+            ...response,
+            verification: verified ? verification : null,
+          })),
+        }
+      : null,
     assessments: assessments.map(({ responses, ...assessment }) => ({
       ...assessment,
       totalResponses: responses.length,
       completedResponses: responses.filter((response) => Boolean(response.maturityLevelId) && Boolean(response.explanation.trim())).length,
-      revisionCount: responses.filter((response) => response.status === 'NEEDS_REVISION').length,
     })),
   }
 })

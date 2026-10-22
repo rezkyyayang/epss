@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getApiError, formatDate } from '../../../utils/format'
+import { withFinalLevels } from '../../../utils/score'
 
 interface EvidenceItem {
   id: string
@@ -8,7 +9,6 @@ interface EvidenceItem {
 }
 interface AssessmentResponse {
   id: string
-  status: string
   version: number
   maturityLevelId: string | null
   explanation: string
@@ -24,12 +24,16 @@ interface AssessmentResponse {
     maturityLevels: Array<{ id: string; level: number; criterion: string }>
   }
   evidence: EvidenceItem[]
-  decisions: Array<{ outcome: string; comment: string; createdAt: string; reviewer: { displayName: string } }>
+  // Present only after Pusdatin sends the verification result.
+  verification: { maturityLevelId: string; comment: string; updatedAt: string } | null
 }
 interface AssessmentDetail {
   id: string
   status: string
+  activityName: string
+  activityYear: number | null
   submittedAt: string | null
+  verifiedAt: string | null
   updatedAt: string
   period: { name: string; startsAt: string | null; endsAt: string | null }
   unit: { name: string; code: string }
@@ -58,23 +62,48 @@ const assessment = computed((): AssessmentDetail | undefined => data.value?.asse
 const responses = computed((): AssessmentResponse[] => assessment.value?.responses || [])
 const current = computed((): AssessmentResponse | undefined => responses.value.find((item: AssessmentResponse) => item.id === selectedId.value))
 const maxEvidenceLinks = computed(() => data.value?.maxEvidenceLinks || 0)
-const editable = computed(() => {
-  if (!assessment.value || !current.value) return false
-  if (assessment.value.status === 'DRAFT') return true
-  return assessment.value.status === 'REVISION_REQUIRED' && current.value.status !== 'APPROVED'
-})
+const editable = computed(() => assessment.value?.status === 'DRAFT')
+const verified = computed(() => assessment.value?.status === 'VERIFIED')
 const isComplete = (response: AssessmentResponse) => Boolean(response.maturityLevelId && response.explanation.trim()) && (!response.indicator.requiresEvidence || response.evidence.length > 0)
 const completeCount = computed(() => responses.value.filter((response: AssessmentResponse) => isComplete(response)).length)
-const incompleteCount = computed(() => responses.value.filter((response: AssessmentResponse) => !isComplete(response) || response.status === 'NEEDS_REVISION').length)
-const lastReview = computed(() => current.value?.decisions?.[0])
+const incompleteCount = computed(() => responses.value.filter((response: AssessmentResponse) => !isComplete(response)).length)
+const finalResponses = computed(() => withFinalLevels(responses.value))
+const currentFinalLevel = computed(() => current.value?.indicator.maturityLevels.find((level: { id: string }) => level.id === current.value?.verification?.maturityLevelId))
+
+const activityName = ref('')
+const activityYear = ref<number | null>(null)
+const savingActivity = ref(false)
+const activitySaved = computed(() => Boolean(assessment.value?.activityName.trim() && assessment.value?.activityYear))
+const activityDirty = computed(() => Boolean(assessment.value) && (activityName.value.trim() !== assessment.value?.activityName || activityYear.value !== assessment.value?.activityYear))
 
 watch(assessment, (value: AssessmentDetail | undefined) => {
-  if (!value || selectedId.value) return
-  const firstActionable = value.responses.find((response: AssessmentResponse) => response.status === 'NEEDS_REVISION')
-    || value.responses.find((response: AssessmentResponse) => !isComplete(response))
-    || value.responses[0]
+  if (!value) return
+  if (!activityDirty.value || !activityName.value) {
+    activityName.value = value.activityName
+    activityYear.value = value.activityYear
+  }
+  if (selectedId.value) return
+  const firstActionable = value.responses.find((response: AssessmentResponse) => !isComplete(response)) || value.responses[0]
   if (firstActionable) selectedId.value = firstActionable.id
 }, { immediate: true })
+
+async function saveActivity() {
+  if (!activityName.value.trim() || !activityYear.value) return
+  savingActivity.value = true
+  pageError.value = ''
+  try {
+    await $fetch(`/api/user/assessments/${assessmentId}/activity`, {
+      method: 'PUT',
+      body: { activityName: activityName.value.trim(), activityYear: Number(activityYear.value) },
+    })
+    await refresh()
+    saveMessage.value = 'Data kegiatan statistik tersimpan.'
+  } catch (requestError) {
+    pageError.value = getApiError(requestError, 'Data kegiatan belum tersimpan.')
+  } finally {
+    savingActivity.value = false
+  }
+}
 
 watch([selectedLevel, explanation], () => {
   if (!initializing.value && current.value) {
@@ -106,7 +135,7 @@ async function saveCurrent() {
   saving.value = true
   pageError.value = ''
   try {
-    const result = await $fetch<{ response: { version: number; status: string; updatedAt: string } }>(`/api/user/responses/${current.value.id}`, {
+    const result = await $fetch<{ response: { version: number; updatedAt: string } }>(`/api/user/responses/${current.value.id}`, {
       method: 'PUT',
       body: {
         maturityLevelId: selectedLevel.value,
@@ -114,7 +143,7 @@ async function saveCurrent() {
         expectedVersion: current.value.version,
       },
     })
-    updateResponse({ id: current.value.id, version: result.response.version, status: result.response.status })
+    updateResponse({ id: current.value.id, version: result.response.version })
     dirty.value = false
     saveMessage.value = 'Draf tersimpan.'
     await refresh()
@@ -170,6 +199,7 @@ async function removeEvidence(evidence: EvidenceItem) {
 
 async function submitAssessment() {
   if (!(await saveCurrent())) return
+  if (!window.confirm('Kirim penilaian ke Pusdatin? Setelah dikirim, isian dan bukti tidak dapat diubah lagi.')) return
   pageError.value = ''
   submitting.value = true
   try {
@@ -228,18 +258,48 @@ onBeforeUnmount(() => {
         </div>
         <AssessmentProgress :complete="completeCount" :total="responses.length" />
       </div>
-      <ScoreSummary :responses="responses" />
+      <ScoreSummary :responses="responses" label="Nilai mandiri" />
+      <ScoreSummary v-if="verified" :responses="finalResponses" label="Nilai final (verifikasi Pusdatin)" />
       <div class="summary-context">
         <span>Terakhir diubah {{ formatDate(assessment.updatedAt) }}</span>
         <span v-if="assessment.submittedAt">Dikirim {{ formatDate(assessment.submittedAt) }}</span>
+        <span v-if="assessment.verifiedAt">Diverifikasi {{ formatDate(assessment.verifiedAt) }}</span>
       </div>
     </section>
 
     <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
     <NoticeBanner v-else-if="saveMessage" tone="success" aria-live="polite">{{ saveMessage }}</NoticeBanner>
-    <NoticeBanner v-if="assessment.status === 'REVISION_REQUIRED'" tone="warning">
-      Buka indikator bertanda perlu revisi, perbaiki jawaban, lalu kirim ulang penilaian.
+    <NoticeBanner v-if="assessment.status === 'SUBMITTED' || assessment.status === 'IN_REVIEW'" tone="info">
+      Penilaian sudah dikirim dan sedang menunggu verifikasi Pusdatin. Isian tidak dapat diubah lagi.
     </NoticeBanner>
+    <NoticeBanner v-else-if="verified" tone="success">
+      Verifikasi Pusdatin selesai. Level final dan komentar tampil pada tiap indikator.
+    </NoticeBanner>
+
+    <section class="panel" aria-labelledby="activity-heading">
+      <div class="panel-header">
+        <div>
+          <h2 id="activity-heading">Kegiatan statistik</h2>
+          <p>Satu kegiatan statistik yang dinilai unit Anda pada periode ini.</p>
+        </div>
+      </div>
+      <form v-if="editable" class="panel-body activity-form" @submit.prevent="saveActivity">
+        <div class="field activity-name">
+          <label for="activity-name">Nama kegiatan</label>
+          <input id="activity-name" v-model="activityName" class="control" required minlength="3" maxlength="240" placeholder="Contoh: Kompilasi Data Indeks Kualitas Kebijakan Nasional">
+        </div>
+        <div class="field activity-year">
+          <label for="activity-year">Tahun</label>
+          <input id="activity-year" v-model.number="activityYear" class="control" type="number" required min="2000" max="2100" inputmode="numeric">
+        </div>
+        <button class="btn btn-secondary" type="submit" :disabled="savingActivity || !activityDirty || !activityName.trim() || !activityYear">
+          {{ savingActivity ? 'Menyimpan...' : 'Simpan kegiatan' }}
+        </button>
+      </form>
+      <div v-else class="panel-body">
+        <p class="activity-summary"><strong>{{ assessment.activityName || 'Belum diisi' }}</strong><span v-if="assessment.activityYear"> · {{ assessment.activityYear }}</span></p>
+      </div>
+    </section>
 
     <div class="assessment-layout">
       <button class="drawer-scrim" :class="{ 'is-open': treeOpen }" aria-label="Tutup daftar indikator" :aria-hidden="!treeOpen" tabindex="-1" @click="closeTree" />
@@ -273,9 +333,10 @@ onBeforeUnmount(() => {
             <p>{{ current.indicator.criterion }}</p>
           </div>
 
-          <div v-if="current.status === 'NEEDS_REVISION' && lastReview" class="review-feedback">
-            <h3>Catatan revisi dari {{ lastReview.reviewer.displayName }}</h3>
-            <p>{{ lastReview.comment }}</p>
+          <div v-if="current.verification" class="review-feedback">
+            <h3>Hasil verifikasi Pusdatin</h3>
+            <p><strong>Level final {{ currentFinalLevel?.level ?? '-' }} dari {{ current.indicator.maturityLevels.length }}</strong><span v-if="currentFinalLevel">: {{ currentFinalLevel.criterion }}</span></p>
+            <p v-if="current.verification.comment">{{ current.verification.comment }}</p>
           </div>
 
           <MaturityPicker
@@ -335,7 +396,7 @@ onBeforeUnmount(() => {
                 Tempel tautan dokumen, misalnya Google Drive atau OneDrive. Pastikan Admin pemeriksa punya akses untuk membukanya. Maksimum {{ maxEvidenceLinks }} tautan per indikator.
               </p>
             </form>
-            <p v-else class="field-hint">Bukti hanya dapat diubah saat draf atau revisi.</p>
+            <p v-else class="field-hint">Bukti hanya dapat diubah selama penilaian masih draf.</p>
           </section>
 
           <div class="indicator-actions">
@@ -343,15 +404,16 @@ onBeforeUnmount(() => {
               {{ saving ? 'Menyimpan...' : 'Simpan draf' }}
             </button>
             <button
-              v-if="assessment.status === 'DRAFT' || assessment.status === 'REVISION_REQUIRED'"
+              v-if="editable"
               class="btn btn-primary"
               type="button"
-              :disabled="submitting || saving || addingLink || incompleteCount > 0"
+              :disabled="submitting || saving || addingLink || incompleteCount > 0 || !activitySaved"
               @click="submitAssessment"
             >
-              {{ submitting ? 'Mengirim...' : assessment.status === 'REVISION_REQUIRED' ? 'Kirim ulang penilaian' : 'Kirim untuk diperiksa' }}
+              {{ submitting ? 'Mengirim...' : 'Kirim penilaian' }}
             </button>
-            <span v-if="editable && incompleteCount" class="field-hint">{{ incompleteCount }} indikator belum lengkap atau masih perlu revisi.</span>
+            <span v-if="editable && incompleteCount" class="field-hint">{{ incompleteCount }} indikator belum lengkap.</span>
+            <span v-else-if="editable && !activitySaved" class="field-hint">Simpan nama dan tahun kegiatan statistik sebelum mengirim.</span>
           </div>
         </div>
       </section>

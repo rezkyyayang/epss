@@ -10,7 +10,7 @@ const userLinks = [
 ]
 const adminLinks = [
   { label: 'Dashboard', to: '/admin/dashboard' },
-  { label: 'Antrean pemeriksaan', to: '/admin/queue' },
+  { label: 'Antrean verifikasi', to: '/admin/queue' },
   { label: 'Periode', to: '/admin/periods' },
   { label: 'Indikator', to: '/admin/indicators' },
   { label: 'Pengguna dan unit', to: '/admin/users' },
@@ -47,7 +47,7 @@ defineExpose({ focusFirstLink })
     </div>
     <div class="sidebar-footer">
       <NuxtLink to="/pusat-bantuan" @click="emit('navigate')">Pusat bantuan</NuxtLink>
-      <span>Penilaian dan pemeriksaan internal</span>
+      <span>Penilaian mandiri dan verifikasi</span>
     </div>
   </aside>
 </template>

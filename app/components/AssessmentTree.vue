@@ -1,7 +1,6 @@
 <script setup lang="ts">
 interface TreeResponse {
   id: string
-  status: string
   maturityLevelId: string | null
   explanation: string
   indicator: {
@@ -34,8 +33,6 @@ const groups = computed(() => {
 })
 
 function completeness(response: TreeResponse) {
-  if (response.status === 'NEEDS_REVISION') return 'Perlu revisi'
-  if (response.status === 'APPROVED') return 'Disetujui'
   return response.maturityLevelId && response.explanation.trim() ? 'Lengkap' : 'Belum lengkap'
 }
 </script>
