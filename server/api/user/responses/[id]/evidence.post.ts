@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { assertSameOrigin } from '../../../../utils/auth'
-import { canEditResponse, requireOwnedResponse } from '../../../../utils/authorization'
+import { assertPeriodOpen, canEditResponse, requireOwnedResponse } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
 import { auditData, maxEvidenceLinks, readRouteId, readValidatedPayload } from '../../../../utils/validation'
 
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
     const current = await tx.assessmentResponse.findUnique({
       where: { id },
-      select: { id: true, version: true, assessment: { select: { status: true } }, evidence: { select: { url: true } } },
+      select: { id: true, version: true, assessment: { select: { status: true, period: { select: { status: true } } } }, evidence: { select: { url: true } } },
     })
     if (!current || current.version !== response.version) {
       throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menambah tautan.' })
@@ -47,6 +47,7 @@ export default defineEventHandler(async (event) => {
     if (!canEditResponse(current.assessment.status)) {
       throw createError({ statusCode: 409, statusMessage: 'Bukti terkunci setelah penilaian dikirim.' })
     }
+    assertPeriodOpen(current.assessment.period.status)
     if (current.evidence.length >= maxEvidenceLinks) {
       throw createError({ statusCode: 409, statusMessage: `Satu indikator dapat memuat paling banyak ${maxEvidenceLinks} tautan bukti.` })
     }

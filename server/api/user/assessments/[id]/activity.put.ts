@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { assertSameOrigin } from '../../../../utils/auth'
-import { canEditResponse, requireOwnedAssessment } from '../../../../utils/authorization'
+import { assertPeriodOpen, canEditResponse, requireOwnedAssessment } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
 import { auditData, readRouteId, readValidatedPayload } from '../../../../utils/validation'
 
@@ -18,10 +18,11 @@ export default defineEventHandler(async (event) => {
   const assessment = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${id} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true } })
+    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true, period: { select: { status: true } } } })
     if (!canEditResponse(current.status)) {
       throw createError({ statusCode: 409, statusMessage: 'Data kegiatan terkunci setelah penilaian dikirim.' })
     }
+    assertPeriodOpen(current.period.status)
     const saved = await tx.assessment.update({
       where: { id },
       data: { activityName: body.activityName, activityYear: body.activityYear },

@@ -8,6 +8,13 @@ export function canEditResponse(assessmentStatus: string) {
   return assessmentStatus === 'DRAFT'
 }
 
+// Closing a period freezes its drafts: the unit can no longer change or send them.
+export function assertPeriodOpen(periodStatus: string) {
+  if (periodStatus !== 'ACTIVE') {
+    throw createError({ statusCode: 409, statusMessage: 'Periode ini sudah tidak aktif, sehingga isian tidak dapat diubah atau dikirim.' })
+  }
+}
+
 // Pusdatin verifies only after the unit has submitted, and stops once the verification result is sent.
 export function canVerify(assessmentStatus: string) {
   return assessmentStatus === 'SUBMITTED' || assessmentStatus === 'IN_REVIEW'

@@ -35,7 +35,7 @@ interface AssessmentDetail {
   submittedAt: string | null
   verifiedAt: string | null
   updatedAt: string
-  period: { name: string; startsAt: string | null; endsAt: string | null }
+  period: { name: string; startsAt: string | null; endsAt: string | null; status: string }
   unit: { name: string; code: string }
   responses: AssessmentResponse[]
 }
@@ -64,7 +64,9 @@ const assessment = computed((): AssessmentDetail | undefined => data.value?.asse
 const responses = computed((): AssessmentResponse[] => assessment.value?.responses || [])
 const current = computed((): AssessmentResponse | undefined => responses.value.find((item: AssessmentResponse) => item.id === selectedId.value))
 const maxEvidenceLinks = computed(() => data.value?.maxEvidenceLinks || 0)
-const editable = computed(() => assessment.value?.status === 'DRAFT')
+// A draft stays editable only while its period is active; closing the period freezes it.
+const periodClosed = computed(() => assessment.value?.status === 'DRAFT' && assessment.value.period.status !== 'ACTIVE')
+const editable = computed(() => assessment.value?.status === 'DRAFT' && !periodClosed.value)
 const verified = computed(() => assessment.value?.status === 'VERIFIED')
 const isComplete = (response: AssessmentResponse) => Boolean(response.maturityLevelId && response.explanation.trim()) && (!response.indicator.requiresEvidence || response.evidence.length > 0)
 const completeCount = computed(() => responses.value.filter((response: AssessmentResponse) => isComplete(response)).length)
@@ -329,6 +331,9 @@ onBeforeUnmount(() => {
     </NoticeBanner>
     <NoticeBanner v-else-if="verified" tone="success">
       Verifikasi Pusdatin selesai. Level final dan komentar tampil pada tiap indikator.
+    </NoticeBanner>
+    <NoticeBanner v-else-if="periodClosed" tone="warning">
+      Periode {{ assessment.period.name }} sudah tidak aktif. Draf ini tidak dapat diubah atau dikirim. Hubungi Admin Pusdatin bila periode perlu dibuka kembali.
     </NoticeBanner>
 
     <section class="panel" aria-labelledby="activity-heading">

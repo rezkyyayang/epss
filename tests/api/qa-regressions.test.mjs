@@ -1,4 +1,4 @@
-// Regression tests for the QA findings fixed on 22 October 2026 (QA-01, QA-03, QA-07).
+// Regression tests for the QA findings fixed on 22 October 2026 (QA-01, QA-03, QA-07, QA-22).
 // They run against a live server backed by a disposable database, never a shared one:
 //   SECTORA_TEST_URL=http://127.0.0.1:3002 SECTORA_TEST_ADMIN_EMAIL=... SECTORA_TEST_ADMIN_PASSWORD=... npm run test:api
 // Each run creates its own accounts and units with random names.
@@ -122,6 +122,55 @@ describe('QA regressions', { skip }, () => {
       const user = new Client()
       await user.login(account.email, account.secret)
       assert.equal((await user.request('PATCH', `/api/admin/users/${target.id}`, { isActive: false })).status, 403)
+    })
+  })
+
+  describe('QA-22 closing a period freezes its drafts', () => {
+    const closedMessage = 'Periode ini sudah tidak aktif, sehingga isian tidak dapat diubah atau dikirim.'
+
+    test('a complete draft cannot be changed or sent until the period is active again', async () => {
+      const period = await admin.request('POST', '/api/admin/periods', { name: `Periode uji ${token()}` })
+      assert.equal(period.status, 200)
+      const periodId = period.data.period.id
+      const levels = [1, 2].map((level) => ({ level, criterion: `Kriteria ${level}` }))
+      const catalog = { domains: [{ code: 'D1', name: 'Domain uji', weight: 100, indicators: [{ code: 'I1', title: 'Indikator uji', weight: 100, maturityLevels: levels }] }] }
+      assert.equal((await admin.request('PUT', `/api/admin/periods/${periodId}/catalog`, catalog)).status, 200)
+      assert.equal((await admin.request('PUT', `/api/admin/periods/${periodId}/units`, { unitIds: [unitId] })).status, 200)
+      assert.equal((await admin.request('PATCH', `/api/admin/periods/${periodId}`, { status: 'ACTIVE' })).status, 200)
+
+      const account = await createUser()
+      const user = new Client()
+      await user.login(account.email, account.secret)
+      const opened = await user.request('POST', '/api/user/assessments', { periodId, unitId, activityName: 'Kegiatan uji', activityYear: 2027 })
+      assert.equal(opened.status, 200)
+      const assessmentId = opened.data.assessment.id
+      const [response] = (await user.request('GET', `/api/user/assessments/${assessmentId}`)).data.assessment.responses
+      const [levelOne, levelTwo] = response.indicator.maturityLevels
+      const saved = await user.request('PUT', `/api/user/responses/${response.id}`, { maturityLevelId: levelOne.id, explanation: 'Penjelasan uji', expectedVersion: response.version })
+      assert.equal(saved.status, 200)
+      const link = await user.request('POST', `/api/user/responses/${response.id}/evidence`, { url: `https://example.com/${token()}` })
+      assert.equal(link.status, 200)
+
+      assert.equal((await admin.request('PATCH', `/api/admin/periods/${periodId}`, { status: 'CLOSED' })).status, 200)
+      const version = saved.data.response.version + 1
+      const attempts = [
+        await user.request('PUT', `/api/user/responses/${response.id}`, { maturityLevelId: levelTwo.id, explanation: 'Diubah setelah ditutup', expectedVersion: version }),
+        await user.request('POST', `/api/user/responses/${response.id}/evidence`, { url: `https://example.com/${token()}` }),
+        await user.request('DELETE', `/api/user/evidence/${link.data.evidence.id}`),
+        await user.request('PUT', `/api/user/assessments/${assessmentId}/activity`, { activityName: 'Diubah setelah ditutup', activityYear: 2027 }),
+        await user.request('POST', `/api/user/assessments/${assessmentId}/submit`),
+      ]
+      for (const attempt of attempts) {
+        assert.equal(attempt.status, 409)
+        assert.equal(attempt.data.statusMessage, closedMessage)
+      }
+      const after = (await user.request('GET', `/api/user/assessments/${assessmentId}`)).data.assessment
+      assert.equal(after.status, 'DRAFT')
+      assert.equal(after.responses[0].explanation, 'Penjelasan uji')
+      assert.equal(after.responses[0].evidence.length, 1)
+
+      assert.equal((await admin.request('PATCH', `/api/admin/periods/${periodId}`, { status: 'ACTIVE' })).status, 200)
+      assert.equal((await user.request('POST', `/api/user/assessments/${assessmentId}/submit`)).status, 200)
     })
   })
 

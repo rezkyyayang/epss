@@ -1,5 +1,5 @@
 import { assertSameOrigin } from '../../../../utils/auth'
-import { requireOwnedAssessment } from '../../../../utils/authorization'
+import { assertPeriodOpen, requireOwnedAssessment } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
 import { auditData, readRouteId } from '../../../../utils/validation'
 
@@ -10,8 +10,9 @@ export default defineEventHandler(async (event) => {
   const nextStatus = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${id} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true, activityName: true, activityYear: true } })
+    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true, activityName: true, activityYear: true, period: { select: { status: true } } } })
     if (current.status !== 'DRAFT') throw createError({ statusCode: 409, statusMessage: 'Penilaian ini sudah dikirim.' })
+    assertPeriodOpen(current.period.status)
     if (!current.activityName.trim() || !current.activityYear) {
       throw createError({ statusCode: 409, statusMessage: 'Lengkapi nama dan tahun kegiatan statistik sebelum mengirim.' })
     }

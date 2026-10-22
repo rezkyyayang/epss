@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { assertSameOrigin } from '../../../utils/auth'
-import { canEditResponse, requireOwnedResponse } from '../../../utils/authorization'
+import { assertPeriodOpen, canEditResponse, requireOwnedResponse } from '../../../utils/authorization'
 import { prisma } from '../../../utils/db'
 import { auditData, readValidatedPayload, readRouteId } from '../../../utils/validation'
 
@@ -33,13 +33,14 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${assessment.id} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const current = await tx.assessmentResponse.findUnique({ where: { id }, select: { version: true, assessment: { select: { status: true } } } })
+    const current = await tx.assessmentResponse.findUnique({ where: { id }, select: { version: true, assessment: { select: { status: true, period: { select: { status: true } } } } } })
     if (!current || current.version !== body.expectedVersion) {
       throw createError({ statusCode: 409, statusMessage: 'Jawaban berubah di sesi lain. Muat ulang sebelum menyimpan.' })
     }
     if (!canEditResponse(current.assessment.status)) {
       throw createError({ statusCode: 409, statusMessage: 'Jawaban terkunci setelah penilaian dikirim.' })
     }
+    assertPeriodOpen(current.assessment.period.status)
     const changed = await tx.assessmentResponse.updateMany({
       where: { id, version: body.expectedVersion },
       data: {
