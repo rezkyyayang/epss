@@ -7,6 +7,12 @@ const [{ data: unitData, refresh: refreshUnits, pending: unitsPending, error: un
   useFetch<{ units: UnitRow[] }>('/api/admin/units'),
   useFetch<{ users: UserRow[] }>('/api/admin/users'),
 ])
+const auth = useAuth()
+// The server only accepts units the signed-in Admin holds, so the picker lists those.
+const grantableUnits = computed(() => {
+  const heldUnitIds = new Set((auth.user.value?.memberships || []).map(({ id }) => id))
+  return (unitData.value?.units || []).filter((unit) => unit.isActive && heldUnitIds.has(unit.id))
+})
 const listsPending = computed(() => unitsPending.value || usersPending.value)
 const listsError = computed(() => unitsError.value || usersError.value)
 const unitName = ref('')
@@ -29,7 +35,7 @@ async function createUnit() {
   try {
     await $fetch('/api/admin/units', { method: 'POST', body: { name: unitName.value, code: unitCode.value } })
     unitName.value = ''; unitCode.value = ''; message.value = 'Unit berhasil dibuat.'
-    await refreshUnits()
+    await Promise.all([refreshUnits(), auth.refresh()])
   } catch (error) { pageError.value = getApiError(error, 'Unit belum dapat dibuat.') }
   finally { saving.value = false }
 }
@@ -79,8 +85,9 @@ async function createUser() {
           <fieldset class="field">
             <legend class="field-label">Unit yang dapat diakses</legend>
             <div class="check-list">
-              <label v-for="unit in (unitData?.units || []).filter((item) => item.isActive)" :key="unit.id" class="check-row"><input v-model="selectedUnitIds" type="checkbox" :value="unit.id"><span>{{ unit.name }} · {{ unit.code }}</span></label>
-              <p v-if="!(unitData?.units || []).some((item) => item.isActive)" class="field-hint">Buat unit sebelum menambahkan akun dengan akses unit.</p>
+              <label v-for="unit in grantableUnits" :key="unit.id" class="check-row"><input v-model="selectedUnitIds" type="checkbox" :value="unit.id"><span>{{ unit.name }} · {{ unit.code }}</span></label>
+              <p v-if="!grantableUnits.length" class="field-hint">Anda belum memegang unit aktif. Buat unit baru agar dapat memberikannya ke akun lain.</p>
+              <p v-else class="field-hint">Hanya unit yang termasuk dalam akses Anda yang dapat diberikan.</p>
             </div>
           </fieldset>
           <p v-if="role === 'ADMIN'" class="field-hint">Admin dapat mengelola pengaturan. Keputusan pemeriksaan hanya tersedia pada unit yang dipilih.</p>

@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { assertSameOrigin, createSessionToken, hashSessionToken, setSessionCookie } from '../../utils/auth'
 import { prisma } from '../../utils/db'
+import { loginThrottleKeys, readClientIp, releaseLoginAttempt, reserveLoginAttempt } from '../../utils/login-throttle'
 import { verifyPassword } from '../../utils/password'
 
 const loginSchema = z.object({
@@ -17,10 +17,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const email = parsed.data.email.toLowerCase()
-  const clientIp = event.node.req.socket.remoteAddress || 'unknown'
-  const throttleKey = createHash('sha256').update(`${email}:${clientIp}`).digest('hex')
-  const throttle = await prisma.loginThrottle.findUnique({ where: { keyHash: throttleKey } })
-  if (throttle?.blockedUntil && throttle.blockedUntil > new Date()) {
+  const throttleKeys = loginThrottleKeys(email, readClientIp(event))
+  if (!await reserveLoginAttempt(throttleKeys)) {
     throw createError({ statusCode: 429, statusMessage: 'Terlalu banyak percobaan. Coba lagi beberapa menit.' })
   }
 
@@ -30,23 +28,10 @@ export default defineEventHandler(async (event) => {
   })
   const valid = user?.isActive ? await verifyPassword(parsed.data.password, user.passwordHash) : false
   if (!user || !valid) {
-    const failedAttempts = (throttle?.failedAttempts || 0) + 1
-    await prisma.loginThrottle.upsert({
-      where: { keyHash: throttleKey },
-      create: {
-        keyHash: throttleKey,
-        failedAttempts,
-        blockedUntil: failedAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
-      },
-      update: {
-        failedAttempts,
-        blockedUntil: failedAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
-      },
-    })
     throw createError({ statusCode: 401, statusMessage: 'Email atau kata sandi tidak cocok.' })
   }
 
-  await prisma.loginThrottle.deleteMany({ where: { keyHash: throttleKey } })
+  await releaseLoginAttempt(throttleKeys)
   const token = createSessionToken()
   const hours = Number(process.env.SESSION_DURATION_HOURS || 12)
   await prisma.session.create({

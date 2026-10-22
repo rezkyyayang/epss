@@ -27,6 +27,12 @@ export function useAuth() {
     return user.value
   }
 
+  // Memberships change when an Admin creates a unit, so callers can re-read the session.
+  async function refresh() {
+    loaded.value = false
+    return load()
+  }
+
   async function login(email: string, password: string) {
     const result = await $fetch<{ user: SessionUser }>('/api/auth/login', {
       method: 'POST',
@@ -47,5 +53,5 @@ export function useAuth() {
     }
   }
 
-  return { user, loaded, loading, load, login, logout }
+  return { user, loaded, loading, load, refresh, login, logout }
 }

@@ -62,6 +62,7 @@ Copy `.env.example` to `.env` for local development. Keep `.env` out of version 
 | `DATABASE_URL` | PostgreSQL connection string |
 | `APP_ORIGIN` | Comma-separated origin allowlist for mutation requests; local development accepts both loopback URLs |
 | `SESSION_DURATION_HOURS` | Database session and cookie lifetime |
+| `TRUST_PROXY` | Set to `true` only behind a reverse proxy that appends `X-Forwarded-For`; login throttling then keys on the client address the proxy reports |
 
 In production, set `APP_ORIGIN` to the externally served origin. The local loopback defaults only apply outside production.
 
