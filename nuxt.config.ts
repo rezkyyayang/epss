@@ -25,4 +25,8 @@ export default defineNuxtConfig({
     },
   },
   devtools: { enabled: false },
+  // The Node server sends static files as-is, so ship gzip and brotli copies built ahead of time.
+  nitro: {
+    compressPublicAssets: true,
+  },
 })
