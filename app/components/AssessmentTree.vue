@@ -57,7 +57,7 @@ const totals = computed(() => {
         <h2>Ringkasan</h2>
         <p>Pilih indikator untuk membuka isiannya.</p>
       </div>
-      <button class="btn btn-quiet btn-small mobile-only" type="button" @click="emit('close')">Tutup</button>
+      <button class="btn btn-quiet btn-step tree-close" type="button" aria-label="Tutup ringkasan" @click="emit('close')"><span aria-hidden="true">×</span></button>
     </div>
     <div class="panel-body">
       <div v-for="domain in groups" :key="domain.id" class="tree-group">

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getApiError, formatDate } from '../../../utils/format'
-import { withFinalLevels } from '../../../utils/score'
 
 interface EvidenceItem {
   id: string
@@ -53,7 +52,6 @@ const submitting = ref(false)
 const dirty = ref(false)
 const initializing = ref(false)
 const treeOpen = ref(false)
-const mobile = ref(false)
 const saveMessage = toastRef('success')
 const pageError = toastRef('error')
 const indicatorMessage = toastRef('success')
@@ -69,9 +67,7 @@ const periodClosed = computed(() => assessment.value?.status === 'DRAFT' && asse
 const editable = computed(() => assessment.value?.status === 'DRAFT' && !periodClosed.value)
 const verified = computed(() => assessment.value?.status === 'VERIFIED')
 const isComplete = (response: AssessmentResponse) => Boolean(response.maturityLevelId && response.explanation.trim()) && (!response.indicator.requiresEvidence || response.evidence.length > 0)
-const completeCount = computed(() => responses.value.filter((response: AssessmentResponse) => isComplete(response)).length)
 const incompleteCount = computed(() => responses.value.filter((response: AssessmentResponse) => !isComplete(response)).length)
-const finalResponses = computed(() => withFinalLevels(responses.value))
 const currentFinalLevel = computed(() => current.value?.indicator.maturityLevels.find((level: { id: string }) => level.id === current.value?.verification?.maturityLevelId))
 
 const activityName = ref('')
@@ -270,8 +266,10 @@ function warnBeforeUnload(event: BeforeUnloadEvent) {
   if (editable.value && (dirty.value || activityDirty.value)) event.preventDefault()
 }
 
-function updateViewport() {
-  mobile.value = window.matchMedia('(max-width: 780px)').matches
+// Ringkasan is a drawer on every screen size, so focus moves into it on open and back to the button on close.
+function openTree() {
+  treeOpen.value = true
+  nextTick(() => document.querySelector<HTMLButtonElement>('#indicator-tree .tree-close')?.focus())
 }
 
 function closeTree() {
@@ -284,13 +282,10 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-  updateViewport()
-  window.addEventListener('resize', updateViewport)
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', warnBeforeUnload)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateViewport)
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('beforeunload', warnBeforeUnload)
 })
@@ -308,23 +303,6 @@ onBeforeUnmount(() => {
         <StatusBadge :status="assessment.status" />
       </template>
     </PageHeading>
-
-    <section class="panel assessment-summary">
-      <div class="summary-progress">
-        <div>
-          <strong>Progres isian</strong>
-          <span>{{ completeCount }} dari {{ responses.length }} indikator lengkap</span>
-        </div>
-        <AssessmentProgress :complete="completeCount" :total="responses.length" />
-      </div>
-      <ScoreSummary :responses="responses" label="Nilai mandiri" />
-      <ScoreSummary v-if="verified" :responses="finalResponses" label="Nilai final (verifikasi Pusdatin)" />
-      <div class="summary-context">
-        <span>Terakhir diubah {{ formatDate(assessment.updatedAt) }}</span>
-        <span v-if="assessment.submittedAt">Dikirim {{ formatDate(assessment.submittedAt) }}</span>
-        <span v-if="assessment.verifiedAt">Diverifikasi {{ formatDate(assessment.verifiedAt) }}</span>
-      </div>
-    </section>
 
     <NoticeBanner v-if="assessment.status === 'SUBMITTED' || assessment.status === 'IN_REVIEW'" tone="info">
       Penilaian sudah dikirim dan sedang menunggu verifikasi Pusdatin. Isian tidak dapat diubah lagi.
@@ -362,12 +340,12 @@ onBeforeUnmount(() => {
     </section>
 
     <div class="assessment-layout">
-      <button class="drawer-scrim" :class="{ 'is-open': treeOpen }" aria-label="Tutup daftar indikator" :aria-hidden="!treeOpen" tabindex="-1" @click="closeTree" />
+      <button class="drawer-scrim" :class="{ 'is-open': treeOpen }" aria-label="Tutup ringkasan" :aria-hidden="!treeOpen" tabindex="-1" @click="closeTree" />
       <AssessmentTree
         :responses="responses"
         :selected-id="selectedId"
         :open="treeOpen"
-        :inert="mobile && !treeOpen"
+        :inert="!treeOpen"
         @select="selectResponse"
         @close="closeTree"
       />
@@ -375,7 +353,7 @@ onBeforeUnmount(() => {
       <section v-if="current" class="panel indicator-panel" aria-labelledby="indicator-heading">
         <div class="panel-body form-stack">
           <div class="indicator-topbar">
-            <button ref="treeTrigger" class="btn btn-secondary btn-small review-tree-button" type="button" :aria-expanded="treeOpen" aria-controls="indicator-tree" @click="treeOpen = true">
+            <button ref="treeTrigger" class="btn btn-secondary btn-small review-tree-button" type="button" :aria-expanded="treeOpen" aria-controls="indicator-tree" @click="openTree">
               Ringkasan
             </button>
             <div class="indicator-step">

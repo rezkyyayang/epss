@@ -787,16 +787,37 @@ textarea.control {
 
 .assessment-layout {
   display: grid;
-  grid-template-columns: 268px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 20px;
 }
 
+/* Ringkasan is a drawer on every screen size, as in EPSS: hidden until the Ringkasan button opens it. */
 .tree-panel {
-  position: sticky;
-  top: calc(var(--header-height) + 20px);
-  max-height: calc(100vh - var(--header-height) - 40px);
+  position: fixed;
+  z-index: 70;
+  top: var(--header-height);
+  bottom: 0;
+  left: 0;
+  width: min(90vw, 380px);
   overflow: auto;
+  transform: translateX(-105%);
+  transition: transform 160ms ease-out;
+  border-radius: 0;
+  box-shadow: 8px 0 22px rgba(23, 44, 50, 0.16);
+}
+
+.tree-panel.is-open {
+  transform: translateX(0);
+}
+
+.assessment-layout .drawer-scrim.is-open {
+  position: fixed;
+  z-index: 50;
+  inset: var(--header-height) 0 0;
+  display: block;
+  border: 0;
+  background: rgba(20, 35, 40, 0.38);
 }
 
 .tree-panel .panel-body {
@@ -1073,9 +1094,6 @@ textarea.control {
   white-space: nowrap;
 }
 
-.review-tree-button {
-  display: none;
-}
 
 .review-feedback {
   border: 1px solid #d0ae6d;
@@ -1295,7 +1313,7 @@ textarea.control {
 }
 
 /* Collapsed sidebar (wide screens only): the page takes the full width, and the content drops its
-   centred max width so the assessment's indicator list moves to the left edge and the form widens. */
+   centred max width so the assessment form widens. */
 @media (min-width: 781px) {
   .workspace.is-collapsed {
     grid-template-columns: minmax(0, 1fr);
@@ -1667,10 +1685,6 @@ textarea.control {
     --sidebar-width: 212px;
   }
 
-  .assessment-layout {
-    grid-template-columns: 238px minmax(0, 1fr);
-  }
-
   .management-grid {
     grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.2fr);
   }
@@ -1735,30 +1749,10 @@ textarea.control {
     padding-inline: 24px;
   }
 
-  .assessment-layout,
   .management-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .tree-panel {
-    position: fixed;
-    z-index: 70;
-    top: var(--header-height);
-    bottom: 0;
-    left: 0;
-    width: min(90vw, 360px);
-    max-height: none;
-    transform: translateX(-105%);
-    transition: transform 160ms ease-out;
-    border-radius: 0;
-    box-shadow: 8px 0 22px rgba(23, 44, 50, 0.16);
-  }
-
-  .tree-panel.is-open {
-    transform: translateX(0);
-  }
-
-  .review-tree-button,
   .mobile-only {
     display: inline-flex;
   }
