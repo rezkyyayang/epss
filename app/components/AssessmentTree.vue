@@ -3,11 +3,13 @@ interface TreeResponse {
   id: string
   maturityLevelId: string | null
   explanation: string
+  evidence: unknown[]
   indicator: {
     code: string
     title: string
     weight: number
     position: number
+    requiresEvidence: boolean
     domain: { id: string; name: string; weight: number; position: number }
   }
 }
@@ -32,23 +34,37 @@ const groups = computed(() => {
     .map((domain) => ({ ...domain, responses: domain.responses.sort((a, b) => a.indicator.position - b.indicator.position) }))
 })
 
-function completeness(response: TreeResponse) {
-  return response.maturityLevelId && response.explanation.trim() ? 'Lengkap' : 'Belum lengkap'
+// Lengkap matches what submitting requires; an indicator with only part of that is Kurang lengkap.
+type Completeness = 'Lengkap' | 'Kurang lengkap' | 'Tidak lengkap'
+function completeness(response: TreeResponse): Completeness {
+  const hasLevel = Boolean(response.maturityLevelId)
+  const hasExplanation = Boolean(response.explanation.trim())
+  const evidenceDone = !response.indicator.requiresEvidence || response.evidence.length > 0
+  if (hasLevel && hasExplanation && evidenceDone) return 'Lengkap'
+  return hasLevel || hasExplanation || response.evidence.length ? 'Kurang lengkap' : 'Tidak lengkap'
 }
+const totals = computed(() => {
+  const counts: Record<Completeness, number> = { 'Lengkap': 0, 'Kurang lengkap': 0, 'Tidak lengkap': 0 }
+  for (const response of props.responses) counts[completeness(response)] += 1
+  return counts
+})
 </script>
 
 <template>
-  <nav id="indicator-tree" class="panel tree-panel" :class="{ 'is-open': props.open }" :inert="props.inert" aria-label="Navigasi indikator">
+  <nav id="indicator-tree" class="panel tree-panel" :class="{ 'is-open': props.open }" :inert="props.inert" aria-label="Ringkasan indikator">
     <div class="panel-header">
       <div>
-        <h2>Indikator</h2>
-        <p>Pilih satu untuk melihat isian.</p>
+        <h2>Ringkasan</h2>
+        <p>Pilih indikator untuk membuka isiannya.</p>
       </div>
       <button class="btn btn-quiet btn-small mobile-only" type="button" @click="emit('close')">Tutup</button>
     </div>
     <div class="panel-body">
       <div v-for="domain in groups" :key="domain.id" class="tree-group">
-        <h3 class="tree-domain">{{ domain.name }} · bobot {{ domain.weight }}%</h3>
+        <h3 class="tree-domain">
+          <span>{{ domain.name }} · bobot {{ domain.weight }}%</span>
+          <span class="tree-count" :aria-label="`${domain.responses.length} indikator`">{{ domain.responses.length }}</span>
+        </h3>
         <button
           v-for="response in domain.responses"
           :key="response.id"
@@ -64,5 +80,10 @@ function completeness(response: TreeResponse) {
         </button>
       </div>
     </div>
+    <dl class="tree-stats">
+      <div><dt>Lengkap</dt><dd>{{ totals['Lengkap'] }}</dd></div>
+      <div><dt>Kurang lengkap</dt><dd>{{ totals['Kurang lengkap'] }}</dd></div>
+      <div><dt>Tidak lengkap</dt><dd>{{ totals['Tidak lengkap'] }}</dd></div>
+    </dl>
   </nav>
 </template>

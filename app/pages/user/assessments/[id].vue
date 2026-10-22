@@ -193,10 +193,10 @@ async function goToResponse(response: AssessmentResponse | undefined) {
   if (!response) return
   const before = selectedId.value
   await selectResponse(response.id)
-  // The pager sits at the bottom, so bring the new indicator's heading into view.
+  // Bring the top of the new indicator into view, arrows included, so the next step is one click away.
   if (selectedId.value !== before) {
     await nextTick()
-    document.querySelector('#indicator-heading')?.scrollIntoView({ block: 'start' })
+    document.querySelector('.indicator-topbar')?.scrollIntoView({ block: 'start' })
   }
 }
 
@@ -374,9 +374,20 @@ onBeforeUnmount(() => {
 
       <section v-if="current" class="panel indicator-panel" aria-labelledby="indicator-heading">
         <div class="panel-body form-stack">
-          <button ref="treeTrigger" class="btn btn-secondary btn-small review-tree-button" type="button" :aria-expanded="treeOpen" aria-controls="indicator-tree" @click="treeOpen = true">
-            Daftar indikator
-          </button>
+          <div class="indicator-topbar">
+            <button ref="treeTrigger" class="btn btn-secondary btn-small review-tree-button" type="button" :aria-expanded="treeOpen" aria-controls="indicator-tree" @click="treeOpen = true">
+              Ringkasan
+            </button>
+            <div class="indicator-step">
+              <span class="pager-position">{{ currentIndex + 1 }} / {{ orderedResponses.length }}</span>
+              <button class="btn btn-secondary btn-step" type="button" :disabled="!previousResponse || saving" :aria-label="previousResponse ? `Indikator sebelumnya, ${previousResponse.indicator.code}` : 'Indikator sebelumnya'" @click="goToResponse(previousResponse)">
+                <span aria-hidden="true">‹</span>
+              </button>
+              <button class="btn btn-secondary btn-step" type="button" :disabled="!nextResponse || saving" :aria-label="nextResponse ? `Indikator berikutnya, ${nextResponse.indicator.code}` : 'Indikator berikutnya'" @click="goToResponse(nextResponse)">
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
           <div class="indicator-context">
             <span>{{ current.indicator.domain.name }} (bobot {{ current.indicator.domain.weight }}%)</span>
             <span aria-hidden="true">/</span>

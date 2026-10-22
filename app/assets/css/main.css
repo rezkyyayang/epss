@@ -808,10 +808,80 @@ textarea.control {
 }
 
 .tree-domain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 0 5px;
   color: #34434a;
   font-size: 13px;
   font-weight: 700;
+}
+
+.tree-count {
+  min-width: 24px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #fff;
+  background: var(--brand-deep);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Completeness totals stay in view at the bottom of the scrolling list. */
+.tree-stats {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  border-top: 1px solid #e2e8eb;
+  padding: 10px 12px;
+  background: var(--surface, #fff);
+}
+
+.tree-stats div {
+  display: grid;
+  justify-items: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 4px;
+}
+
+.tree-stats dt {
+  order: 2;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.tree-stats dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.indicator-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.indicator-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-step {
+  min-width: 44px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
 }
 
 .tree-item {
