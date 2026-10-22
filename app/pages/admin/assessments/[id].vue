@@ -50,12 +50,18 @@ function isChanged(response: ReviewResponse) {
   return levels[response.id] !== response.verification.maturityLevelId || (comments[response.id] || '').trim() !== response.verification.comment
 }
 
+// The saved result is written into the page instead of reloading it, so the reviewer keeps their place.
+// The confirmation shows beside the indicator that was saved rather than at the top of the page.
+const savedResponse = ref('')
+const auth = useAuth()
 async function saveVerification(response: ReviewResponse) {
-  busyResponse.value = response.id; pageError.value = ''; success.value = ''
+  busyResponse.value = response.id; pageError.value = ''; success.value = ''; savedResponse.value = ''
   try {
-    await $fetch(`/api/admin/responses/${response.id}/verification`, { method: 'PUT', body: { maturityLevelId: levels[response.id], comment: comments[response.id] || '' } })
-    success.value = `Verifikasi ${response.indicator.code} tersimpan.`
-    await refresh()
+    const result = await $fetch<{ verification: { maturityLevelId: string; comment: string; updatedAt: string }; assessmentStatus: string }>(`/api/admin/responses/${response.id}/verification`, { method: 'PUT', body: { maturityLevelId: levels[response.id], comment: comments[response.id] || '' } })
+    response.verification = { ...result.verification, verifier: { displayName: auth.user.value?.displayName || 'Admin' } }
+    comments[response.id] = result.verification.comment
+    if (assessment.value) assessment.value.status = result.assessmentStatus
+    savedResponse.value = response.id
   } catch (requestError) { pageError.value = getApiError(requestError, 'Verifikasi belum dapat disimpan.') }
   finally { busyResponse.value = '' }
 }
@@ -73,7 +79,7 @@ async function sendVerification() {
 </script>
 
 <template>
-  <LoadingState v-if="pending" label="Memuat penilaian..." />
+  <LoadingState v-if="pending && !data" label="Memuat penilaian..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">{{ getApiError(error, 'Penilaian belum dapat dimuat.') }} <NuxtLink class="btn btn-secondary btn-small" to="/admin/queue">Kembali ke antrean</NuxtLink></NoticeBanner>
   <div v-else-if="assessment" class="section-stack">
     <PageHeading :title="assessment.activityName || assessment.period.name" :subtitle="`${assessment.unit.name} · ${assessment.unit.code}${assessment.activityYear ? ` · ${assessment.activityYear}` : ''} · ${assessment.period.name}`">
@@ -129,7 +135,8 @@ async function sendVerification() {
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" type="submit" :disabled="busyResponse === response.id || !levels[response.id] || !isChanged(response)">{{ busyResponse === response.id ? 'Menyimpan...' : response.verification ? 'Perbarui verifikasi' : 'Simpan verifikasi' }}</button>
-              <span v-if="response.verification" class="field-hint">Disimpan {{ response.verification.verifier.displayName }}, {{ formatDate(response.verification.updatedAt) }}</span>
+              <span v-if="savedResponse === response.id" class="save-confirm" role="status">Verifikasi {{ response.indicator.code }} tersimpan.</span>
+              <span v-else-if="response.verification" class="field-hint">Disimpan {{ response.verification.verifier.displayName }}, {{ formatDate(response.verification.updatedAt) }}</span>
             </div>
           </form>
           <section v-else-if="response.verification" class="review-answer">

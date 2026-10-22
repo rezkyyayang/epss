@@ -48,7 +48,7 @@ async function createPeriod() {
 
     <section class="panel" aria-labelledby="period-list-heading">
       <div class="panel-header"><div><h2 id="period-list-heading">Periode terdaftar</h2><p>Penugasan dan katalog terkunci saat penilaian pertama dibuat.</p></div></div>
-      <LoadingState v-if="pending" label="Memuat periode..." inset />
+      <LoadingState v-if="pending && !data" label="Memuat periode..." inset />
       <NoticeBanner v-else-if="error" class="panel-body" tone="error" role="alert">{{ getApiError(error, 'Daftar periode belum dapat dimuat.') }} <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button></NoticeBanner>
       <div v-else-if="data?.periods.length" class="record-list">
         <article v-for="period in data.periods" :key="period.id" class="period-row">

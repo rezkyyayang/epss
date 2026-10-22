@@ -16,7 +16,7 @@ const displayName = ref('')
 const email = ref('')
 const password = ref('')
 const role = ref<'USER' | 'ADMIN'>('USER')
-const selectedUnitIds = ref<string[]>([])
+const selectedUnitId = ref('')
 const saving = ref(false)
 const message = ref('')
 const pageError = ref('')
@@ -38,8 +38,8 @@ async function createUnit() {
 async function createUser() {
   saving.value = true; message.value = ''; pageError.value = ''
   try {
-    await $fetch('/api/admin/users', { method: 'POST', body: { displayName: displayName.value, email: email.value, password: password.value, role: role.value, unitIds: selectedUnitIds.value } })
-    displayName.value = ''; email.value = ''; password.value = ''; role.value = 'USER'; selectedUnitIds.value = []
+    await $fetch('/api/admin/users', { method: 'POST', body: { displayName: displayName.value, email: email.value, password: password.value, role: role.value, unitIds: role.value === 'USER' && selectedUnitId.value ? [selectedUnitId.value] : [] } })
+    displayName.value = ''; email.value = ''; password.value = ''; role.value = 'USER'; selectedUnitId.value = ''
     message.value = 'Akun berhasil dibuat.'
     await refreshUsers()
   } catch (error) { pageError.value = getApiError(error, 'Akun belum dapat dibuat.') }
@@ -49,7 +49,7 @@ async function createUser() {
 
 <template>
   <PageHeading title="Pengguna dan unit" subtitle="Buat akun, berikan akses unit, dan lihat keanggotaan yang sudah terdaftar." />
-  <LoadingState v-if="listsPending" label="Memuat pengguna dan unit..." />
+  <LoadingState v-if="listsPending && !unitData && !userData" label="Memuat pengguna dan unit..." />
   <NoticeBanner v-else-if="listsError" tone="error" role="alert">
     {{ getApiError(listsError, 'Daftar pengguna dan unit belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refreshLists">Coba lagi</button>
@@ -77,15 +77,16 @@ async function createUser() {
             <div class="field"><label for="user-password">Kata sandi awal</label><input id="user-password" v-model="password" class="control" required type="password" minlength="14" maxlength="200" autocomplete="new-password"><p class="field-hint">Minimum 14 karakter.</p></div>
             <div class="field"><label for="user-role">Peran</label><select id="user-role" v-model="role" class="control"><option value="USER">User</option><option value="ADMIN">Admin</option></select></div>
           </div>
-          <fieldset class="field">
-            <legend class="field-label">Unit yang dapat diakses</legend>
-            <div class="check-list">
-              <label v-for="unit in grantableUnits" :key="unit.id" class="check-row"><input v-model="selectedUnitIds" type="checkbox" :value="unit.id"><span>{{ unit.name }} · {{ unit.code }}</span></label>
-              <p v-if="!grantableUnits.length" class="field-hint">Belum ada unit aktif. Tambahkan unit terlebih dahulu.</p>
-            </div>
-          </fieldset>
-          <p v-if="role === 'ADMIN'" class="field-hint">Admin (Pusdatin) mengelola pengaturan dan memverifikasi penilaian semua unit kerja, sehingga tidak perlu memilih unit.</p>
-          <div class="form-actions"><button class="btn btn-primary" type="submit" :disabled="saving || (role === 'USER' && selectedUnitIds.length === 0)">{{ saving ? 'Menyimpan...' : 'Buat akun' }}</button></div>
+          <div v-if="role === 'USER'" class="field">
+            <label for="user-unit">Unit kerja</label>
+            <select id="user-unit" v-model="selectedUnitId" class="control" required :disabled="!grantableUnits.length">
+              <option value="" disabled>Pilih unit kerja</option>
+              <option v-for="unit in grantableUnits" :key="unit.id" :value="unit.id">{{ unit.name }} · {{ unit.code }}</option>
+            </select>
+            <p class="field-hint">{{ grantableUnits.length ? 'Akun User mewakili satu unit kerja dan mengisi satu kegiatan statistik per periode.' : 'Belum ada unit aktif. Tambahkan unit terlebih dahulu.' }}</p>
+          </div>
+          <p v-else class="field-hint">Admin (Pusdatin) mengelola pengaturan dan memverifikasi penilaian semua unit kerja, sehingga tidak perlu memilih unit.</p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit" :disabled="saving || (role === 'USER' && !selectedUnitId)">{{ saving ? 'Menyimpan...' : 'Buat akun' }}</button></div>
         </form>
       </section>
     </div>

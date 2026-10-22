@@ -41,6 +41,12 @@ export default defineEventHandler(async (event) => {
       return existing
     }
 
+    // A user assesses exactly one statistical activity per period, even when they belong to several units.
+    const otherInPeriod = await tx.assessment.findFirst({ where: { periodId: body.periodId, createdById: user.id }, select: { id: true } })
+    if (otherInPeriod) {
+      throw createError({ statusCode: 409, statusMessage: 'Anda sudah mengisi satu kegiatan statistik pada periode ini. Setiap periode hanya untuk satu kegiatan.' })
+    }
+
     const indicators = period.domains.flatMap((domain) => domain.indicators)
     if (!isCatalogReady(period.domains)) {
       throw createError({ statusCode: 409, statusMessage: 'Katalog periode belum lengkap.' })

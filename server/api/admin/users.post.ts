@@ -17,9 +17,11 @@ export default defineEventHandler(async (event) => {
   const { user: actor } = await requireRole(event, 'ADMIN')
   const body = await readValidatedPayload(event, schema)
   const unitIds = [...new Set(body.unitIds)]
-  if (body.role === 'USER' && !unitIds.length) {
-    throw createError({ statusCode: 400, statusMessage: 'Akun User harus memiliki setidaknya satu unit.' })
+  // A User account stands for one work unit; Admins (Pusdatin) see every unit and hold none.
+  if (body.role === 'USER' && unitIds.length !== 1) {
+    throw createError({ statusCode: 400, statusMessage: 'Akun User harus terhubung ke tepat satu unit kerja.' })
   }
+  if (body.role === 'ADMIN') unitIds.length = 0
   const existingUnits = await prisma.unit.count({ where: { id: { in: unitIds }, isActive: true } })
   if (existingUnits !== unitIds.length) {
     throw createError({ statusCode: 400, statusMessage: 'Pilih unit yang masih aktif.' })

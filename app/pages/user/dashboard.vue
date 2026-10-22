@@ -52,6 +52,8 @@ const activeRows = computed(() => {
     ...entry,
     key: `${entry.period.id}:${entry.unit.id}`,
     assessment: existing.find((item) => item.periodId === entry.period.id && item.unitId === entry.unit.id),
+    // One activity per period: once any unit's assessment exists in this period, the others cannot start.
+    periodTaken: existing.some((item) => item.periodId === entry.period.id),
   }))
 })
 
@@ -114,7 +116,7 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
 
 <template>
   <PageHeading title="Penilaian mandiri" :subtitle="unitNames ? `Penilaian mandiri ${unitNames}` : 'Lanjutkan penilaian yang ditugaskan atau lihat hasil verifikasi.'" />
-  <LoadingState v-if="pending" label="Memuat data penilaian..." />
+  <LoadingState v-if="pending && !data" label="Memuat data penilaian..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Data belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>
@@ -141,7 +143,7 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
             </div>
             <div v-if="startingKey !== row.key" class="assignment-action">
               <StatusBadge v-if="row.assessment" :status="row.assessment.status" />
-              <span v-else class="record-meta">Belum dimulai</span>
+              <span v-else-if="!row.periodTaken" class="record-meta">Belum dimulai</span>
               <button
                 v-if="row.assessment"
                 class="btn btn-secondary btn-small"
@@ -151,6 +153,7 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
               >
                 {{ opening === row.key ? 'Membuka...' : row.assessment.status === 'DRAFT' ? 'Lanjutkan' : 'Lihat isian' }}
               </button>
+              <span v-else-if="row.periodTaken" class="record-meta">Kegiatan periode ini sudah diisi</span>
               <button v-else class="btn btn-primary btn-small" type="button" @click="showStartForm(row.key)">Mulai penilaian</button>
             </div>
             <form v-else class="start-form" :aria-label="`Mulai penilaian ${row.period.name}`" @submit.prevent="openAssessment(row.period.id, row.unit.id, true)">

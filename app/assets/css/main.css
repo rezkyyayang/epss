@@ -1185,6 +1185,8 @@ textarea.control {
 .check-row input {
   width: 18px;
   height: 18px;
+  /* A long, wrapping label must not squeeze the box. */
+  flex-shrink: 0;
   accent-color: var(--brand);
 }
 
@@ -2045,6 +2047,12 @@ textarea.control {
 
 .review-decision {
   grid-template-columns: minmax(220px, 1fr) minmax(240px, 1.2fr);
+}
+
+.save-confirm {
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* The level select keeps its own height next to the taller comment box. */

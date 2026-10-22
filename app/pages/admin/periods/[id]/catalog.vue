@@ -60,7 +60,7 @@ async function saveCatalog() {
   <PageHeading :title="data?.period.name || 'Katalog indikator'" subtitle="Susun domain, indikator, bobot, dan kriteria tiap tingkat kematangan untuk periode ini.">
     <template #actions><NuxtLink class="btn btn-secondary btn-small" :to="`/admin/periods/${periodId}`">Pengaturan periode</NuxtLink></template>
   </PageHeading>
-  <LoadingState v-if="pending" label="Memuat katalog..." />
+  <LoadingState v-if="pending && !data" label="Memuat katalog..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">{{ getApiError(error, 'Katalog belum dapat dimuat.') }} <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button></NoticeBanner>
   <div v-else class="section-stack">
     <NoticeBanner v-if="locked" tone="warning">Katalog terkunci setelah penilaian pertama dibuat. Struktur, bobot, dan kriteria tidak dapat diubah.</NoticeBanner>

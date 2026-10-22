@@ -56,6 +56,8 @@ const treeOpen = ref(false)
 const mobile = ref(false)
 const saveMessage = ref('')
 const pageError = ref('')
+const indicatorMessage = ref('')
+const indicatorError = ref('')
 const treeTrigger = ref<HTMLButtonElement | null>(null)
 
 const assessment = computed((): AssessmentDetail | undefined => data.value?.assessment)
@@ -108,7 +110,7 @@ async function saveActivity() {
 watch([selectedLevel, explanation], () => {
   if (!initializing.value && current.value) {
     dirty.value = true
-    saveMessage.value = ''
+    indicatorMessage.value = ''
   }
 })
 
@@ -120,7 +122,7 @@ watch(selectedId, async (id: string) => {
   explanation.value = response.explanation
   evidenceUrl.value = ''
   dirty.value = false
-  saveMessage.value = ''
+  indicatorMessage.value = ''
   await nextTick()
   initializing.value = false
 }, { immediate: true })
@@ -130,10 +132,17 @@ function updateResponse(updated: Partial<AssessmentResponse> & { id: string }) {
   if (target) Object.assign(target, updated)
 }
 
+const levelRequiredMessage = 'Pilih tingkat kematangan terlebih dahulu. Jawaban dan tautan bukti baru dapat disimpan setelah level dipilih.'
+
+// Saves update the answer in place rather than reloading, so the page and its scroll position stay put.
 async function saveCurrent() {
   if (!current.value || !editable.value || !dirty.value) return true
+  if (!selectedLevel.value) {
+    indicatorError.value = levelRequiredMessage
+    return false
+  }
   saving.value = true
-  pageError.value = ''
+  indicatorError.value = ''
   try {
     const result = await $fetch<{ response: { version: number; updatedAt: string } }>(`/api/user/responses/${current.value.id}`, {
       method: 'PUT',
@@ -143,13 +152,12 @@ async function saveCurrent() {
         expectedVersion: current.value.version,
       },
     })
-    updateResponse({ id: current.value.id, version: result.response.version })
+    updateResponse({ id: current.value.id, version: result.response.version, maturityLevelId: selectedLevel.value, explanation: explanation.value.trim() })
     dirty.value = false
-    saveMessage.value = 'Draf tersimpan.'
-    await refresh()
+    indicatorMessage.value = 'Draf tersimpan.'
     return true
   } catch (requestError) {
-    pageError.value = getApiError(requestError, 'Jawaban belum tersimpan. Isian Anda tetap tersedia di halaman ini.')
+    indicatorError.value = getApiError(requestError, 'Jawaban belum tersimpan. Isian Anda tetap tersedia di halaman ini.')
     return false
   } finally {
     saving.value = false
@@ -161,6 +169,12 @@ async function selectResponse(id: string) {
     treeOpen.value = false
     return
   }
+  // An answer without a level cannot be saved, so leaving it means dropping the unsaved text.
+  if (dirty.value && !selectedLevel.value) {
+    if (!window.confirm('Jawaban ini belum memiliki tingkat kematangan sehingga tidak dapat disimpan. Pindah indikator tanpa menyimpan?')) return
+    dirty.value = false
+    indicatorError.value = ''
+  }
   if (!(await saveCurrent())) return
   selectedId.value = id
   treeOpen.value = false
@@ -168,17 +182,23 @@ async function selectResponse(id: string) {
 
 async function addEvidenceLink() {
   if (!current.value || !evidenceUrl.value.trim()) return
+  if (!selectedLevel.value) {
+    indicatorError.value = levelRequiredMessage
+    return
+  }
   // Adding a link bumps the response version, so unsaved answer edits go first.
   if (!(await saveCurrent())) return
-  pageError.value = ''
+  indicatorError.value = ''
   addingLink.value = true
   try {
-    await $fetch(`/api/user/responses/${current.value.id}/evidence`, { method: 'POST', body: { url: evidenceUrl.value.trim() } })
+    const target = current.value
+    const result = await $fetch<{ evidence: EvidenceItem }>(`/api/user/responses/${target.id}/evidence`, { method: 'POST', body: { url: evidenceUrl.value.trim() } })
+    target.evidence.push(result.evidence)
+    target.version += 1
     evidenceUrl.value = ''
-    await refresh()
-    saveMessage.value = 'Tautan bukti tersimpan.'
+    indicatorMessage.value = 'Tautan bukti tersimpan.'
   } catch (requestError) {
-    pageError.value = getApiError(requestError, 'Tautan bukti belum dapat disimpan. Coba lagi.')
+    indicatorError.value = getApiError(requestError, 'Tautan bukti belum dapat disimpan. Coba lagi.')
   } finally {
     addingLink.value = false
   }
@@ -187,13 +207,15 @@ async function addEvidenceLink() {
 async function removeEvidence(evidence: EvidenceItem) {
   if (!current.value || !window.confirm(`Hapus tautan ${evidence.url}?`)) return
   if (!(await saveCurrent())) return
-  pageError.value = ''
+  indicatorError.value = ''
   try {
+    const target = current.value
     await $fetch(`/api/user/evidence/${evidence.id}`, { method: 'DELETE' })
-    await refresh()
-    saveMessage.value = 'Bukti dihapus.'
+    target.evidence = target.evidence.filter((item: EvidenceItem) => item.id !== evidence.id)
+    target.version += 1
+    indicatorMessage.value = 'Bukti dihapus.'
   } catch (requestError) {
-    pageError.value = getApiError(requestError, 'Bukti belum dapat dihapus.')
+    indicatorError.value = getApiError(requestError, 'Bukti belum dapat dihapus.')
   }
 }
 
@@ -238,7 +260,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <LoadingState v-if="pending" label="Memuat penilaian..." />
+  <LoadingState v-if="pending && !data" label="Memuat penilaian..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Penilaian belum dapat dimuat.') }}
     <NuxtLink class="btn btn-secondary btn-small" to="/user/dashboard">Kembali ke dashboard</NuxtLink>
@@ -385,22 +407,26 @@ onBeforeUnmount(() => {
                   inputmode="url"
                   maxlength="2000"
                   placeholder="https://drive.google.com/..."
-                  :disabled="addingLink || current.evidence.length >= maxEvidenceLinks"
+                  :disabled="addingLink || !selectedLevel || current.evidence.length >= maxEvidenceLinks"
                   :aria-describedby="`evidence-hint-${current.id}`"
                 >
               </div>
-              <button class="btn btn-secondary" type="submit" :disabled="addingLink || !evidenceUrl.trim() || current.evidence.length >= maxEvidenceLinks">
+              <button class="btn btn-secondary" type="submit" :disabled="addingLink || !selectedLevel || !evidenceUrl.trim() || current.evidence.length >= maxEvidenceLinks">
                 {{ addingLink ? 'Menyimpan...' : 'Tambah tautan' }}
               </button>
               <p :id="`evidence-hint-${current.id}`" class="field-hint">
-                Tempel tautan dokumen, misalnya Google Drive atau OneDrive. Pastikan Admin pemeriksa punya akses untuk membukanya. Maksimum {{ maxEvidenceLinks }} tautan per indikator.
+                <template v-if="!selectedLevel">Pilih tingkat kematangan di atas terlebih dahulu, lalu tambahkan tautan bukti.</template>
+                <template v-else>Tempel tautan dokumen, misalnya Google Drive atau OneDrive. Pastikan Admin pemeriksa punya akses untuk membukanya. Maksimum {{ maxEvidenceLinks }} tautan per indikator.</template>
               </p>
             </form>
             <p v-else class="field-hint">Bukti hanya dapat diubah selama penilaian masih draf.</p>
           </section>
 
+          <!-- Feedback for this indicator sits beside its buttons, where the user is looking. -->
+          <NoticeBanner v-if="indicatorError" tone="error" role="alert">{{ indicatorError }}</NoticeBanner>
+          <NoticeBanner v-else-if="indicatorMessage" tone="success" aria-live="polite">{{ indicatorMessage }}</NoticeBanner>
           <div class="indicator-actions">
-            <button class="btn btn-secondary" type="button" :disabled="saving || !editable || !dirty" @click="saveCurrent">
+            <button class="btn btn-secondary" type="button" :disabled="saving || !editable || !dirty || !selectedLevel" @click="saveCurrent">
               {{ saving ? 'Menyimpan...' : 'Simpan draf' }}
             </button>
             <button

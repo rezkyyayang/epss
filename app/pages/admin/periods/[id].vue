@@ -59,7 +59,7 @@ async function saveAssignments() {
   <PageHeading :title="period?.name || 'Pengaturan periode'" subtitle="Atur jadwal dan unit yang dapat mengisi penilaian." />
   <NoticeBanner v-if="pageError" tone="error" role="alert">{{ pageError }}</NoticeBanner>
   <NoticeBanner v-else-if="message" tone="success" aria-live="polite">{{ message }}</NoticeBanner>
-  <LoadingState v-if="loading" label="Memuat pengaturan periode..." />
+  <LoadingState v-if="loading && !periodData" label="Memuat pengaturan periode..." />
   <NoticeBanner v-else-if="loadError" tone="error" role="alert">
     {{ getApiError(loadError, 'Pengaturan periode belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refreshData">Coba lagi</button>

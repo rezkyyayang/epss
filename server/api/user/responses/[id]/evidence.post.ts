@@ -30,6 +30,9 @@ export default defineEventHandler(async (event) => {
   if (!canEditResponse(response.assessment.status)) {
     throw createError({ statusCode: 409, statusMessage: 'Bukti terkunci setelah penilaian dikirim.' })
   }
+  if (!response.maturityLevelId) {
+    throw createError({ statusCode: 409, statusMessage: 'Pilih dan simpan tingkat kematangan sebelum menambah tautan bukti.' })
+  }
 
   const evidence = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${response.assessment.id} FOR UPDATE`

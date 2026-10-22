@@ -5,7 +5,8 @@ import { prisma } from '../../../utils/db'
 import { auditData, readValidatedPayload, readRouteId } from '../../../utils/validation'
 
 const schema = z.object({
-  maturityLevelId: z.string().min(1).max(64).nullable(),
+  // An answer is saved only together with its level; an explanation or link without one is not a draft yet.
+  maturityLevelId: z.string({ error: 'Pilih tingkat kematangan sebelum menyimpan.' }).min(1).max(64),
   explanation: z.string().trim().max(12000),
   expectedVersion: z.number().int().positive(),
 })

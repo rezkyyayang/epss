@@ -5,7 +5,7 @@ const { data, pending, error, refresh } = useFetch<{ periods: Array<{ id: string
 
 <template>
   <PageHeading title="Katalog indikator" subtitle="Susun domain, indikator, bobot, tingkat kematangan, dan kewajiban bukti per periode." />
-  <LoadingState v-if="pending" label="Memuat katalog..." />
+  <LoadingState v-if="pending && !data" label="Memuat katalog..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">{{ getApiError(error, 'Daftar katalog belum dapat dimuat.') }} <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button></NoticeBanner>
   <section v-else-if="data?.periods.length" class="panel">
     <div class="panel-header"><div><h2>Pilih periode</h2><p>Katalog terkunci setelah penilaian pertama dibuat.</p></div></div>

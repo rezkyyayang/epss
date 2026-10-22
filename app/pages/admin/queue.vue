@@ -23,7 +23,7 @@ const visibleRows = computed(() => (data.value?.assessments || []).filter((row) 
 
 <template>
   <PageHeading title="Antrean verifikasi" subtitle="Penilaian yang sudah dikirim unit kerja. Buka satu untuk menetapkan level final tiap indikator." />
-  <LoadingState v-if="pending" label="Memuat antrean..." />
+  <LoadingState v-if="pending && !data" label="Memuat antrean..." />
   <NoticeBanner v-else-if="error" tone="error" role="alert">
     {{ getApiError(error, 'Antrean belum dapat dimuat.') }}
     <button class="btn btn-secondary btn-small" type="button" @click="refresh()">Coba lagi</button>
