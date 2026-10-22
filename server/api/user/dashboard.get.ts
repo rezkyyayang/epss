@@ -28,9 +28,29 @@ export default defineEventHandler(async (event) => {
 
   const available = periods.map(({ period, unit }) => ({ period, unit }))
 
+  // The dashboard leads with one assessment: the latest one in an active period, else the latest overall.
+  // Its responses carry just enough of the catalog to compute domain scores on the client.
+  const focusAssessment = assessments.find(({ period }) => period.status === 'ACTIVE') ?? assessments[0]
+  const focusResponses = focusAssessment
+    ? await prisma.assessmentResponse.findMany({
+        where: { assessmentId: focusAssessment.id },
+        select: {
+          maturityLevelId: true,
+          indicator: {
+            select: {
+              weight: true,
+              maturityLevels: { select: { id: true, level: true } },
+              domain: { select: { id: true, name: true, weight: true, position: true } },
+            },
+          },
+        },
+      })
+    : []
+
   return {
     user,
     available,
+    focus: focusAssessment ? { assessmentId: focusAssessment.id, responses: focusResponses } : null,
     assessments: assessments.map(({ responses, ...assessment }) => ({
       ...assessment,
       totalResponses: responses.length,
