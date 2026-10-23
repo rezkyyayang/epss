@@ -12,6 +12,8 @@ const names: Record<string, string> = {
   users: 'Pengguna dan unit',
   catalog: 'Katalog',
   assessments: 'Penilaian',
+  archive: 'Dokumen arsip',
+  akun: 'Akun saya',
 }
 
 // Assessment detail pages have no list page at their parent path, so the crumb opens the matching list.

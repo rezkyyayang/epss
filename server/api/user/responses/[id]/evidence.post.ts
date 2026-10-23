@@ -2,27 +2,15 @@ import { z } from 'zod'
 import { assertSameOrigin } from '../../../../utils/auth'
 import { assertPeriodOpen, canEditResponse, requireOwnedResponse } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
-import { auditData, maxEvidenceLinks, readRouteId, readValidatedPayload } from '../../../../utils/validation'
+import { auditData, maxEvidenceLinks, parseWebUrl, readRouteId, readValidatedPayload } from '../../../../utils/validation'
 
 const schema = z.object({ url: z.string().trim().min(1).max(2000) })
-
-// Only plain web links are stored, so a saved value can never render as a javascript: or data: link.
-function parseEvidenceUrl(value: string) {
-  let url: URL
-  try {
-    url = new URL(value)
-  } catch {
-    return null
-  }
-  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) return null
-  return url.href
-}
 
 export default defineEventHandler(async (event) => {
   assertSameOrigin(event)
   const id = readRouteId(event)
   const body = await readValidatedPayload(event, schema)
-  const url = parseEvidenceUrl(body.url)
+  const url = parseWebUrl(body.url)
   if (!url) {
     throw createError({ statusCode: 400, statusMessage: 'Tautan harus diawali http:// atau https://, misalnya https://drive.google.com/...' })
   }

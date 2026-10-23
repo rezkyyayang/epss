@@ -17,6 +17,18 @@ export async function readValidatedPayload<T extends z.ZodType>(event: H3Event, 
   return parsed.data
 }
 
+// Only plain web links are stored, so a saved value can never render as a javascript: or data: link.
+export function parseWebUrl(value: string) {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return null
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) return null
+  return url.href
+}
+
 // Prisma reports a unique constraint failure as P2002; callers turn it into a 409 with their own message.
 export function isUniqueViolation(error: unknown) {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'

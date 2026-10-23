@@ -15,7 +15,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "admin:create": "tsx scripts/bootstrap-admin.ts",
     "units:seed": "tsx scripts/seed-units.ts",
-    "accounts:seed": "tsx scripts/seed-unit-accounts.ts"
+    "accounts:seed": "tsx scripts/seed-unit-accounts.ts",
+    "archive:seed": "tsx scripts/seed-archive.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",

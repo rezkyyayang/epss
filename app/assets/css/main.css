@@ -767,6 +767,69 @@ textarea.control {
   justify-self: end;
 }
 
+/* Archive: one panel per document type, rows led by the year so readers scan by period. */
+.archive-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.archive-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.archive-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid #e2e8eb;
+  padding: 12px 20px;
+}
+
+.archive-year {
+  color: #244f83;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.archive-main {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.archive-title {
+  overflow-wrap: anywhere;
+  font-weight: 620;
+}
+
+.archive-source {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.archive-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.archive-year-field {
+  max-width: 160px;
+}
+
+@media (max-width: 640px) {
+  .archive-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 12px 16px;
+  }
+
+  .archive-actions {
+    grid-column: 2;
+  }
+}
+
 .empty-state {
   display: grid;
   min-height: 180px;

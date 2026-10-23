@@ -7,6 +7,7 @@ const emit = defineEmits<{ navigate: [] }>()
 const userLinks = [
   { label: 'Dashboard', to: '/user/dashboard' },
   { label: 'Riwayat penilaian', to: '/user/history' },
+  { label: 'Dokumen arsip', to: '/user/archive' },
 ]
 const adminLinks = [
   { label: 'Dashboard', to: '/admin/dashboard' },
@@ -14,6 +15,7 @@ const adminLinks = [
   { label: 'Periode', to: '/admin/periods' },
   { label: 'Indikator', to: '/admin/indicators' },
   { label: 'Pengguna dan unit', to: '/admin/users' },
+  { label: 'Dokumen arsip', to: '/admin/archive' },
 ]
 
 const links = computed(() => auth.user.value?.role === 'ADMIN' ? adminLinks : userLinks)

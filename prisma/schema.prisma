@@ -256,6 +256,19 @@ model StatusEvent {
   @@index([assessmentId, createdAt])
 }
 
+// Reference documents Admins publish for every account to read, grouped on screen by type.
+model ArchiveDocument {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  year      Int
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, year])
+}
+
 model AuditEvent {
   id         String   @id @default(cuid())
   actorId    String?
