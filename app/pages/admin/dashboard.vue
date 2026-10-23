@@ -58,7 +58,24 @@ const selectedRow = computed((): ScoredRow | undefined => {
 const selectedScore = computed(() => selectedRow.value?.final ?? selectedRow.value?.self ?? null)
 const selectedHasGap = computed(() => Boolean(selectedScore.value?.domains.some((domain: DomainScore) => domain.score === null)))
 
-function total(score: { total: number | null; maxLevel: number } | null) {
+// Reset removes the unit's assessment entirely, so the unit fills the period again from the start.
+const resettingId = ref('')
+const pageError = toastRef('error')
+const success = toastRef('success')
+async function resetAssessment(row: ScoredRow) {
+  if (!row.assessment) return
+  if (!window.confirm(`Reset penilaian ${row.unit.name}? Semua level, penjelasan, tautan bukti, dan hasil verifikasi untuk "${row.assessment.activityName}" akan dihapus. Unit kerja harus mengisi ulang dari awal.`)) return
+  resettingId.value = row.assessment.id; pageError.value = ''; success.value = ''
+  try {
+    await $fetch(`/api/admin/assessments/${row.assessment.id}`, { method: 'DELETE' })
+    success.value = `Penilaian ${row.unit.name} sudah direset.`
+    if (selectedUnitId.value === row.unit.id) selectedUnitId.value = ''
+    await refresh()
+  } catch (requestError) { pageError.value = getApiError(requestError, 'Penilaian belum dapat direset.') }
+  finally { resettingId.value = '' }
+}
+
+function total(score:{ total: number | null; maxLevel: number } | null) {
   if (score?.total === null || score?.total === undefined) return '-'
   const predicate = scorePredicate(score.total, score.maxLevel)
   return predicate ? `${formatScore(score.total)} · ${predicate}` : formatScore(score.total)
@@ -124,6 +141,7 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
                   <div class="table-actions">
                     <button v-if="row.self" class="btn btn-quiet btn-small" type="button" :aria-pressed="selectedRow?.unit.id === row.unit.id" @click="selectedUnitId = row.unit.id">Lihat grafik</button>
                     <NuxtLink v-if="row.assessment && row.assessment.status !== 'DRAFT'" class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.assessment.id}`">{{ row.verified ? 'Hasil' : 'Verifikasi' }}</NuxtLink>
+                    <button v-if="row.assessment" class="btn btn-danger btn-small" type="button" :disabled="resettingId === row.assessment.id" @click="resetAssessment(row)">{{ resettingId === row.assessment.id ? 'Mereset...' : 'Reset' }}</button>
                   </div>
                 </td>
               </tr>
