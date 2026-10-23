@@ -116,10 +116,10 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
       </div>
 
       <section class="stats-grid" aria-label="Ringkasan periode">
-        <article class="panel stat-card"><span>Unit ditugaskan</span><strong>{{ counts.assigned }}</strong><span>Pada periode ini</span></article>
-        <article class="panel stat-card"><span>Belum dikirim</span><strong>{{ counts.notSubmitted }}</strong><span>Belum mulai atau masih draf</span></article>
-        <article class="panel stat-card"><span>Menunggu verifikasi</span><strong>{{ counts.waiting }}</strong><span>Sudah dikirim unit kerja</span></article>
-        <article class="panel stat-card"><span>Terverifikasi</span><strong>{{ counts.verified }}</strong><span>Hasil final sudah dikirim</span></article>
+        <article class="panel stat-card stat-card--brand"><span>Unit ditugaskan</span><strong>{{ counts.assigned }}</strong><span>Pada periode ini</span></article>
+        <article class="panel stat-card stat-card--neutral"><span>Belum dikirim</span><strong>{{ counts.notSubmitted }}</strong><span>Belum mulai atau masih draf</span></article>
+        <article class="panel stat-card stat-card--warning"><span>Menunggu verifikasi</span><strong>{{ counts.waiting }}</strong><span>Sudah dikirim unit kerja</span></article>
+        <article class="panel stat-card stat-card--success"><span>Terverifikasi</span><strong>{{ counts.verified }}</strong><span>Hasil final sudah dikirim</span></article>
       </section>
 
       <section class="panel" aria-labelledby="unit-scores-heading">

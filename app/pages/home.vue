@@ -6,7 +6,7 @@ definePageMeta({ layout: false })
   <main class="public-page">
     <header class="public-header">
       <NuxtLink class="brand-lockup" to="/home">
-        <span class="brand-mark" aria-hidden="true">S</span>
+        <img class="brand-logo" src="/lan-ri-logo.png" alt="LAN RI">
         <span>Sectoral</span>
       </NuxtLink>
       <nav aria-label="Navigasi utama">

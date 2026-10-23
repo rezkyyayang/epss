@@ -29,20 +29,24 @@ async function signIn() {
 
 <template>
   <div class="auth-page">
-    <aside class="auth-aside">
-      <NuxtLink class="brand-lockup" to="/home">
-        <span class="brand-mark" aria-hidden="true">S</span>
-        <span>Sectoral</span>
+    <header class="auth-topbar">
+      <NuxtLink class="auth-topbar-brand" to="/home">
+        <img src="/lan-ri-logo.png" alt="LAN RI">
       </NuxtLink>
-      <div>
-        <h1>Jawaban dan bukti, dalam satu alur.</h1>
-        <p>Isi indikator yang ditugaskan, lalu lihat level final dari Pusdatin setelah verifikasi selesai.</p>
-      </div>
-      <footer>Penilaian internal</footer>
-    </aside>
+      <NuxtLink class="auth-back-link" to="/home">Kembali ke Beranda</NuxtLink>
+    </header>
     <main class="auth-main">
-      <form class="auth-form" @submit.prevent="signIn">
+      <section class="auth-intro">
         <div>
+          <p class="auth-product-name">Sectoral</p>
+          <p class="auth-kicker">Penilaian internal</p>
+          <h1>Jawaban dan bukti, dalam satu alur.</h1>
+          <p>Isi indikator yang ditugaskan, lalu lihat level final dari Pusdatin setelah verifikasi selesai.</p>
+        </div>
+      </section>
+      <form class="auth-form" @submit.prevent="signIn">
+        <div class="auth-form-heading">
+          <img class="auth-card-logo" src="/lan-ri-logo.png" alt="LAN RI">
           <h2>Masuk ke Sectoral</h2>
           <p>Gunakan akun yang dibuat oleh Admin organisasi Anda.</p>
         </div>

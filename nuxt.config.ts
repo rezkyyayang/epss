@@ -1,5 +1,8 @@
 export default defineNuxtConfig({
   srcDir: 'app/',
+  dir: {
+    public: '../public',
+  },
   serverDir: 'server',
   css: ['~/assets/css/main.css'],
   modules: [],
@@ -20,9 +23,9 @@ export default defineNuxtConfig({
       title: 'Sectoral',
       meta: [
         { name: 'description', content: 'Penilaian dan pemeriksaan indikator internal.' },
-        { name: 'theme-color', content: '#0B6470' },
+        { name: 'theme-color', content: '#174A8B' },
       ],
-      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+      link: [{ rel: 'icon', type: 'image/png', href: '/lan-ri-favicon.png' }],
     },
   },
   devtools: { enabled: false },
