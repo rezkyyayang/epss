@@ -6,6 +6,7 @@ const auth = useAuth()
 const route = useRoute()
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const errorMessage = toastRef('error')
 const pending = ref(false)
 
@@ -51,7 +52,16 @@ async function signIn() {
         </div>
         <div class="field">
           <label for="password">Kata sandi</label>
-          <input id="password" v-model="password" class="control" type="password" autocomplete="current-password" required maxlength="200">
+          <div class="password-field">
+            <input id="password" v-model="password" class="control" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required maxlength="200">
+            <button class="password-toggle" type="button" :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'" :aria-pressed="showPassword" aria-controls="password" :title="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'" @click="showPassword = !showPassword">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8" />
+                <path v-if="showPassword" d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
         <button class="btn btn-primary" type="submit" :disabled="pending">
           {{ pending ? 'Memeriksa akun...' : 'Masuk' }}

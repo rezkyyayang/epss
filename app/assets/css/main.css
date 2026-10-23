@@ -505,6 +505,40 @@ textarea:disabled {
   border-color: #647982;
 }
 
+/* Password input with a show/hide button inside its right edge; the input keeps room so text never runs under it. */
+.password-field {
+  position: relative;
+}
+
+.password-field .control {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 0 4px 4px 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--brand);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
 .control::placeholder {
   color: #64747a;
   opacity: 1;
