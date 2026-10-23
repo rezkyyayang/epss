@@ -5,6 +5,7 @@ import { PrismaClient } from '../generated/prisma/client'
 // LAN work units at eselon II level, from the 2025 organization chart
 // (Peraturan LAN Nomor 1 Tahun 2025 tentang Organisasi dan Tata Kerja LAN, lan.go.id/struktur-organisasi-lan).
 // Leadership levels (Kepala, Sekretariat Utama, Deputi) are left out: they oversee these units rather than fill assessments.
+// The three Politeknik STIA LAN campuses are satker outside the eselon II chart but fill assessments too.
 const units: Array<{ code: string; name: string }> = [
   { code: 'INSPEKTORAT', name: 'Inspektorat' },
   { code: 'BIRO-RK', name: 'Biro Perencanaan dan Keuangan' },
@@ -26,6 +27,9 @@ const units: Array<{ code: string; name: string }> = [
   { code: 'PUSJAR-PP', name: 'Pusat Pembelajaran dan Strategi Kebijakan Pelayanan Publik' },
   { code: 'PUSJAR-MK', name: 'Pusat Pembelajaran dan Strategi Kebijakan Manajemen Kinerja' },
   { code: 'PUSDATIN', name: 'Pusat Data dan Informasi' },
+  { code: 'POLTEK-JKT', name: 'Politeknik STIA LAN Jakarta' },
+  { code: 'POLTEK-BDG', name: 'Politeknik STIA LAN Bandung' },
+  { code: 'POLTEK-MKS', name: 'Politeknik STIA LAN Makassar' },
 ]
 
 const databaseUrl = process.env.DATABASE_URL

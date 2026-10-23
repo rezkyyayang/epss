@@ -96,7 +96,7 @@ npm run db:migrate:deploy
 npm run units:seed
 ```
 
-`npm run units:seed` loads the 20 LAN work units (eselon II, from the 2025 organization chart) in `scripts/seed-units.ts`. It is safe to run again: units are matched by code, then by name, and corrected in place.
+`npm run units:seed` loads the 23 LAN work units (20 eselon II units from the 2025 organization chart, plus the three Politeknik STIA LAN campuses) in `scripts/seed-units.ts`. It is safe to run again: units are matched by code, then by name, and corrected in place.
 
 `npm run test:api` runs the API regression tests in `tests/api/` against a running server. Point it at a server backed by a disposable database, because each run creates accounts and units. Set `SECTORA_TEST_URL` (included in `APP_ORIGIN`), `SECTORA_TEST_ADMIN_EMAIL`, and `SECTORA_TEST_ADMIN_PASSWORD`; without them the tests are skipped.
 
