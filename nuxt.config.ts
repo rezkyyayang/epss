@@ -22,6 +22,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Penilaian dan pemeriksaan indikator internal.' },
         { name: 'theme-color', content: '#0B6470' },
       ],
+      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
     },
   },
   devtools: { enabled: false },
