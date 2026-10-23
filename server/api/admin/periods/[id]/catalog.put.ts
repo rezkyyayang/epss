@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { assertSameOrigin, requireRole } from '../../../../utils/auth'
 import { hasValidLevels, maxLevels, minLevels, sumWeights } from '../../../../utils/catalog'
@@ -51,6 +52,24 @@ export default defineEventHandler(async (event) => {
   if (!codeScopesValid) throw createError({ statusCode: 400, statusMessage: 'Kode domain dan kode indikator dalam satu domain harus unik.' })
   const indicatorCount = body.domains.reduce((sum, domain) => sum + domain.indicators.length, 0)
 
+  // Rows get their ids here so the whole catalog goes in as three bulk inserts. Nested creates send one
+  // insert per row, and with the database in another region that ran past the transaction time limit.
+  const domainRows = body.domains.map((domain, domainIndex) => ({
+    id: randomUUID(), periodId, code: domain.code.toUpperCase(), name: domain.name, weight: domain.weight, position: domainIndex,
+  }))
+  const indicatorRows = body.domains.flatMap((domain, domainIndex) => domain.indicators.map((indicator, indicatorIndex) => ({
+    id: randomUUID(),
+    domainId: domainRows[domainIndex].id,
+    code: indicator.code.toUpperCase(),
+    title: indicator.title,
+    criterion: indicator.criterion,
+    weight: indicator.weight,
+    requiresEvidence: indicator.requiresEvidence,
+    position: indicatorIndex,
+    levels: indicator.maturityLevels,
+  })))
+  const levelRows = indicatorRows.flatMap(({ id, levels }) => levels.map(({ level, title, criterion, evidenceGuide }) => ({ indicatorId: id, level, title, criterion, evidenceGuide })))
+
   await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Period" WHERE "id" = ${periodId} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Periode tidak ditemukan.' })
@@ -63,29 +82,10 @@ export default defineEventHandler(async (event) => {
     await tx.indicator.deleteMany({ where: { id: { in: indicatorIds } } })
     await tx.domain.deleteMany({ where: { id: { in: domainIds } } })
 
-    for (const [domainIndex, domain] of body.domains.entries()) {
-      await tx.domain.create({
-        data: {
-          periodId,
-          code: domain.code.toUpperCase(),
-          name: domain.name,
-          weight: domain.weight,
-          position: domainIndex,
-          indicators: {
-            create: domain.indicators.map((indicator, indicatorIndex) => ({
-              code: indicator.code.toUpperCase(),
-              title: indicator.title,
-              criterion: indicator.criterion,
-              weight: indicator.weight,
-              requiresEvidence: indicator.requiresEvidence,
-              position: indicatorIndex,
-              maturityLevels: { create: indicator.maturityLevels.map(({ level, title, criterion, evidenceGuide }) => ({ level, title, criterion, evidenceGuide })) },
-            })),
-          },
-        },
-      })
-    }
+    await tx.domain.createMany({ data: domainRows })
+    await tx.indicator.createMany({ data: indicatorRows.map(({ levels: _levels, ...row }) => row) })
+    await tx.maturityLevel.createMany({ data: levelRows })
     await tx.auditEvent.create(auditData(user.id, 'period_catalog_replaced', 'Period', periodId, { domainCount: body.domains.length, indicatorCount }))
-  })
+  }, { maxWait: 10_000, timeout: 20_000 })
   return { ok: true }
 })

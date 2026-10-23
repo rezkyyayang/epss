@@ -61,7 +61,8 @@ export default defineEventHandler(async (event) => {
         createdById: user.id,
         activityName: body.activityName,
         activityYear: body.activityYear,
-        responses: { create: indicators.map(({ id }) => ({ indicatorId: id })) },
+        // One bulk insert instead of one per indicator keeps the transaction short when the database is far away.
+        responses: { createMany: { data: indicators.map(({ id }) => ({ indicatorId: id })) } },
       },
     })
     await tx.statusEvent.create({
