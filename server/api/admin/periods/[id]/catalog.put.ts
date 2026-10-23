@@ -5,11 +5,16 @@ import { prisma } from '../../../../utils/db'
 import { auditData, readRouteId, readValidatedPayload } from '../../../../utils/validation'
 
 const weightSchema = z.number().int().min(1).max(100)
-const levelSchema = z.object({ level: z.number().int().min(1).max(maxLevels), criterion: z.string().trim().min(1).max(3000) })
+const levelSchema = z.object({
+  level: z.number().int().min(1).max(maxLevels),
+  title: z.string().trim().max(160).default(''),
+  criterion: z.string().trim().min(1).max(3000),
+  evidenceGuide: z.string().trim().max(3000).default(''),
+})
 const indicatorSchema = z.object({
   code: z.string().trim().min(1).max(32),
   title: z.string().trim().min(1).max(240),
-  criterion: z.string().trim().max(3000).default(''),
+  criterion: z.string().trim().max(12000).default(''),
   weight: weightSchema,
   requiresEvidence: z.boolean().default(false),
   maturityLevels: z.array(levelSchema).min(minLevels).max(maxLevels),
@@ -74,7 +79,7 @@ export default defineEventHandler(async (event) => {
               weight: indicator.weight,
               requiresEvidence: indicator.requiresEvidence,
               position: indicatorIndex,
-              maturityLevels: { create: indicator.maturityLevels.map(({ level, criterion }) => ({ level, criterion })) },
+              maturityLevels: { create: indicator.maturityLevels.map(({ level, title, criterion, evidenceGuide }) => ({ level, title, criterion, evidenceGuide })) },
             })),
           },
         },

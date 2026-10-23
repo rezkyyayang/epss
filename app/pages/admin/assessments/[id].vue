@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { formatDate, getApiError } from '../../../utils/format'
+import { levelName } from '../../../utils/level'
 import { withFinalLevels } from '../../../utils/score'
 
 interface ReviewResponse {
   id: string; explanation: string; maturityLevelId: string | null
-  maturityLevel: { level: number; criterion: string } | null
-  indicator: { code: string; title: string; criterion: string; requiresEvidence: boolean; weight: number; position: number; domain: { id: string; name: string; weight: number; position: number }; maturityLevels: Array<{ id: string; level: number; criterion: string }> }
+  maturityLevel: { level: number; title: string; criterion: string } | null
+  indicator: { code: string; title: string; criterion: string; requiresEvidence: boolean; weight: number; position: number; domain: { id: string; name: string; weight: number; position: number }; maturityLevels: Array<{ id: string; level: number; title: string; criterion: string; evidenceGuide: string }> }
   evidence: Array<{ id: string; url: string; createdAt: string }>
   verification: { maturityLevelId: string; comment: string; updatedAt: string; verifier: { displayName: string } } | null
 }
@@ -100,14 +101,13 @@ async function sendVerification() {
       <div class="review-responses">
         <article v-for="response in assessment.responses" :key="response.id" class="review-response">
           <div class="review-response-heading">
-            <div><span class="indicator-number">{{ response.indicator.code }}</span><h3>{{ response.indicator.title }}</h3></div>
+            <div><span class="indicator-number">{{ response.indicator.code }}</span><h3>{{ response.indicator.title }}</h3><IndicatorGuide :code="response.indicator.code" :title="response.indicator.title" :definition="response.indicator.criterion" :levels="response.indicator.maturityLevels" /></div>
             <span class="record-meta">{{ response.verification ? 'Terverifikasi' : 'Belum diverifikasi' }}</span>
           </div>
           <p class="indicator-context">{{ response.indicator.domain.name }} (bobot {{ response.indicator.domain.weight }}%) / Bobot indikator {{ response.indicator.weight }}%</p>
-          <div v-if="response.indicator.criterion" class="criteria-block"><h4>Kriteria indikator</h4><p>{{ response.indicator.criterion }}</p></div>
           <section class="review-answer">
             <h4>Level pilihan unit kerja</h4>
-            <p v-if="response.maturityLevel"><strong>Level {{ response.maturityLevel.level }} dari {{ response.indicator.maturityLevels.length }}</strong>: {{ response.maturityLevel.criterion }}</p>
+            <p v-if="response.maturityLevel"><strong>{{ levelName(response.maturityLevel) }} (dari {{ response.indicator.maturityLevels.length }} level)</strong>. {{ response.maturityLevel.criterion }}</p>
             <p v-else class="field-hint">Belum memilih tingkat kematangan.</p>
             <h4>Penjelasan</h4>
             <p class="response-explanation">{{ response.explanation || 'Belum ada penjelasan.' }}</p>
@@ -123,7 +123,7 @@ async function sendVerification() {
               <label :for="`final-level-${response.id}`">Level final</label>
               <select :id="`final-level-${response.id}`" v-model="levels[response.id]" class="control" required>
                 <option value="" disabled>Pilih level final</option>
-                <option v-for="level in response.indicator.maturityLevels" :key="level.id" :value="level.id">Level {{ level.level }}: {{ level.criterion }}</option>
+                <option v-for="level in response.indicator.maturityLevels" :key="level.id" :value="level.id">{{ level.title ? levelName(level) : `Level ${level.level}: ${level.criterion}` }}</option>
               </select>
             </div>
             <div class="field">

@@ -996,10 +996,158 @@ textarea.control {
   background: #f7fafb;
 }
 
-.criteria-block h3 {
+.criteria-block h3,
+.criteria-block h4 {
   margin: 0 0 5px;
   font-size: 14px;
   font-weight: 660;
+}
+
+/* Lamp button beside the indicator code; the full 44px box is the tap target, the icon stays small. */
+.guide-trigger {
+  display: inline-grid;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  margin: -6px 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0;
+  color: var(--brand);
+  background: transparent;
+  cursor: pointer;
+}
+
+.guide-trigger:hover {
+  border-color: #b9d3d7;
+  background: #eff6f7;
+}
+
+.guide-trigger:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.guide-dialog {
+  width: min(760px, calc(100% - 32px));
+  max-height: min(85vh, 900px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(17 24 28 / 0.18);
+}
+
+.guide-dialog::backdrop {
+  background: rgb(17 24 28 / 0.45);
+}
+
+.guide-dialog-body {
+  display: grid;
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+.guide-dialog-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 -24px;
+  border-bottom: 1px solid #e2e8eb;
+  padding: 18px 24px 14px;
+  background: var(--surface);
+}
+
+.guide-dialog-eyebrow {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.guide-dialog-header h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 660;
+  line-height: 1.35;
+}
+
+.guide-text {
+  color: #34434a;
+  line-height: 1.6;
+}
+
+.guide-text p,
+.guide-text ul,
+.guide-text ol {
+  margin: 0 0 10px;
+}
+
+.guide-text ul,
+.guide-text ol {
+  padding-left: 22px;
+}
+
+.guide-text li + li {
+  margin-top: 4px;
+}
+
+.guide-levels {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #e2e8eb;
+  padding-top: 14px;
+}
+
+.guide-levels h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 660;
+}
+
+.guide-level {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #d4e0e4;
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.guide-level strong {
+  color: #273943;
+  font-size: 14px;
+  font-weight: 660;
+}
+
+.guide-level p {
+  margin: 0;
+  color: #43545c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.guide-level .guide-evidence {
+  margin-top: 4px;
+  color: #34434a;
+}
+
+.guide-evidence span {
+  font-weight: 620;
+}
+
+@media (max-width: 640px) {
+  .guide-dialog-body {
+    padding: 0 16px 16px;
+  }
+
+  .guide-dialog-header {
+    margin: 0 -16px;
+    padding: 14px 16px 12px;
+  }
 }
 
 .criteria-block p {
@@ -1391,6 +1539,15 @@ textarea.control {
   grid-template-columns: 60px minmax(0, 1fr);
   align-items: start;
   gap: 10px;
+}
+
+.level-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.guide-editor {
+  min-height: 160px;
 }
 
 .filters-row {
@@ -1872,7 +2029,7 @@ textarea.control {
     grid-template-columns: 42px minmax(0, 1fr);
   }
 
-  .level-row .level-criterion {
+  .level-row .level-fields {
     grid-column: 2;
   }
 
@@ -2368,7 +2525,7 @@ textarea.control {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .level-row .level-criterion {
+  .level-row .level-fields {
     grid-column: auto;
   }
 }

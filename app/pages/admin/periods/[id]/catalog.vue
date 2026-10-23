@@ -2,7 +2,7 @@
 import { getApiError } from '../../../../utils/format'
 import { buildStandardCatalog } from '../../../../utils/standardCatalog'
 
-interface Level { level: number; criterion: string }
+interface Level { level: number; title: string; criterion: string; evidenceGuide: string }
 interface Indicator { code: string; title: string; criterion: string; weight: number; requiresEvidence: boolean; maturityLevels: Level[] }
 interface Domain { code: string; name: string; weight: number; indicators: Indicator[] }
 const minLevels = 2
@@ -20,7 +20,7 @@ watch(() => data.value?.domains, (value: Domain[] | undefined) => {
     code, name, weight,
     indicators: indicators.map(({ code: indicatorCode, title, criterion, weight: indicatorWeight, requiresEvidence, maturityLevels }) => ({
       code: indicatorCode, title, criterion, weight: indicatorWeight, requiresEvidence,
-      maturityLevels: maturityLevels.map(({ level, criterion: levelCriterion }) => ({ level, criterion: levelCriterion })),
+      maturityLevels: maturityLevels.map(({ level, title: levelTitle, criterion: levelCriterion, evidenceGuide }) => ({ level, title: levelTitle, criterion: levelCriterion, evidenceGuide })),
     })),
   }))
 }, { immediate: true })
@@ -31,13 +31,13 @@ const validWeight = (value: number) => Number.isInteger(value) && value >= 1 && 
 const valid = computed(() => domains.value.length > 0 && domainTotal.value === 100 && domains.value.every((domain: Domain) => domain.code.trim() && domain.name.trim() && validWeight(domain.weight) && domain.indicators.length > 0 && sum(domain.indicators) === 100 && domain.indicators.every((indicator: Indicator) => indicator.code.trim() && indicator.title.trim() && validWeight(indicator.weight) && indicator.maturityLevels.length >= minLevels && indicator.maturityLevels.every((level: Level) => level.criterion.trim()))))
 
 function newIndicator(): Indicator {
-  return { code: '', title: '', criterion: '', weight: 0, requiresEvidence: false, maturityLevels: Array.from({ length: 3 }, (_, index) => ({ level: index + 1, criterion: '' })) }
+  return { code: '', title: '', criterion: '', weight: 0, requiresEvidence: false, maturityLevels: Array.from({ length: 3 }, (_, index) => ({ level: index + 1, title: '', criterion: '', evidenceGuide: '' })) }
 }
 function addDomain() { domains.value.push({ code: '', name: '', weight: 0, indicators: [] }) }
 function addIndicator(domainIndex: number) { domains.value[domainIndex].indicators.push(newIndicator()) }
 function removeDomain(index: number) { domains.value.splice(index, 1) }
 function removeIndicator(domainIndex: number, indicatorIndex: number) { domains.value[domainIndex].indicators.splice(indicatorIndex, 1) }
-function addLevel(indicator: Indicator) { indicator.maturityLevels.push({ level: indicator.maturityLevels.length + 1, criterion: '' }) }
+function addLevel(indicator: Indicator) { indicator.maturityLevels.push({ level: indicator.maturityLevels.length + 1, title: '', criterion: '', evidenceGuide: '' }) }
 function removeLastLevel(indicator: Indicator) { indicator.maturityLevels.pop() }
 function loadStandardCatalog() {
   if (domains.value.length && !window.confirm('Ganti isi formulir dengan katalog standar? Perubahan yang belum disimpan akan hilang.')) return
@@ -96,13 +96,21 @@ async function saveCatalog() {
             <div class="field"><label :for="`indicator-title-${domainIndex}-${indicatorIndex}`">Nama indikator</label><input :id="`indicator-title-${domainIndex}-${indicatorIndex}`" v-model.trim="indicator.title" class="control" :disabled="locked" maxlength="240"></div>
             <div class="field"><label :for="`indicator-weight-${domainIndex}-${indicatorIndex}`">Bobot indikator (%)</label><input :id="`indicator-weight-${domainIndex}-${indicatorIndex}`" v-model.number="indicator.weight" class="control" type="number" min="1" max="100" step="1" inputmode="numeric" :disabled="locked"></div>
           </div>
-          <div class="field"><label :for="`indicator-criterion-${domainIndex}-${indicatorIndex}`">Keterangan indikator (opsional)</label><textarea :id="`indicator-criterion-${domainIndex}-${indicatorIndex}`" v-model.trim="indicator.criterion" class="control" :disabled="locked" maxlength="3000" /></div>
+          <div class="field">
+            <label :for="`indicator-criterion-${domainIndex}-${indicatorIndex}`">Penjelasan indikator (opsional)</label>
+            <textarea :id="`indicator-criterion-${domainIndex}-${indicatorIndex}`" v-model.trim="indicator.criterion" class="control guide-editor" :disabled="locked" maxlength="12000" :aria-describedby="`indicator-criterion-hint-${domainIndex}-${indicatorIndex}`" />
+            <p :id="`indicator-criterion-hint-${domainIndex}-${indicatorIndex}`" class="field-hint">Tampil saat User menekan ikon lampu di samping kode indikator. Awali baris dengan "- " untuk poin atau "1. " untuk daftar bernomor.</p>
+          </div>
           <label class="check-row"><input v-model="indicator.requiresEvidence" type="checkbox" :disabled="locked"><span>Tautan bukti dukung wajib</span></label>
           <div class="level-editor">
             <h4>Tingkat kematangan</h4>
             <div v-for="level in indicator.maturityLevels" :key="level.level" class="level-row">
               <strong>Level {{ level.level }}</strong>
-              <div class="field level-criterion"><label :for="`level-criterion-${domainIndex}-${indicatorIndex}-${level.level}`">Kriteria Level {{ level.level }}</label><textarea :id="`level-criterion-${domainIndex}-${indicatorIndex}-${level.level}`" v-model.trim="level.criterion" class="control" :disabled="locked" maxlength="3000" /></div>
+              <div class="level-fields">
+                <div class="field"><label :for="`level-title-${domainIndex}-${indicatorIndex}-${level.level}`">Nama Level {{ level.level }} (opsional)</label><input :id="`level-title-${domainIndex}-${indicatorIndex}-${level.level}`" v-model.trim="level.title" class="control" :disabled="locked" maxlength="160" placeholder="Contoh: Tersedia Landasan Kebijakan"></div>
+                <div class="field level-criterion"><label :for="`level-criterion-${domainIndex}-${indicatorIndex}-${level.level}`">Kriteria Level {{ level.level }}</label><textarea :id="`level-criterion-${domainIndex}-${indicatorIndex}-${level.level}`" v-model.trim="level.criterion" class="control" :disabled="locked" maxlength="3000" /></div>
+                <div class="field"><label :for="`level-evidence-${domainIndex}-${indicatorIndex}-${level.level}`">Bukti dukung Level {{ level.level }} (opsional)</label><textarea :id="`level-evidence-${domainIndex}-${indicatorIndex}-${level.level}`" v-model.trim="level.evidenceGuide" class="control" :disabled="locked" maxlength="3000" placeholder="Dokumen yang diharapkan untuk level ini" /></div>
+              </div>
             </div>
             <div class="toolbar-actions">
               <button class="btn btn-secondary btn-small" type="button" :disabled="locked || indicator.maturityLevels.length >= maxLevels" @click="addLevel(indicator)">Tambah level</button>

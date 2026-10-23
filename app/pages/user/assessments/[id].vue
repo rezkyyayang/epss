@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getApiError, formatDate } from '../../../utils/format'
+import { levelName } from '../../../utils/level'
 
 interface EvidenceItem {
   id: string
@@ -20,7 +21,7 @@ interface AssessmentResponse {
     weight: number
     position: number
     domain: { id: string; name: string; weight: number; position: number }
-    maturityLevels: Array<{ id: string; level: number; criterion: string }>
+    maturityLevels: Array<{ id: string; level: number; title: string; criterion: string; evidenceGuide: string }>
   }
   evidence: EvidenceItem[]
   // Present only after Pusdatin sends the verification result.
@@ -69,6 +70,7 @@ const verified = computed(() => assessment.value?.status === 'VERIFIED')
 const isComplete = (response: AssessmentResponse) => Boolean(response.maturityLevelId && response.explanation.trim()) && (!response.indicator.requiresEvidence || response.evidence.length > 0)
 const incompleteCount = computed(() => responses.value.filter((response: AssessmentResponse) => !isComplete(response)).length)
 const currentFinalLevel = computed(() => current.value?.indicator.maturityLevels.find((level: { id: string }) => level.id === current.value?.verification?.maturityLevelId))
+const selectedLevelGuide = computed(() => current.value?.indicator.maturityLevels.find((level: { id: string }) => level.id === selectedLevel.value))
 
 const activityName = ref('')
 const activityYear = ref<number | null>(null)
@@ -376,15 +378,18 @@ onBeforeUnmount(() => {
           <div class="indicator-path">
             <span class="indicator-number">{{ current.indicator.code }}</span>
             <h2 id="indicator-heading" class="indicator-title">{{ current.indicator.title }}</h2>
-          </div>
-          <div v-if="current.indicator.criterion" class="criteria-block">
-            <h3>Kriteria indikator</h3>
-            <p>{{ current.indicator.criterion }}</p>
+            <IndicatorGuide
+              :key="current.id"
+              :code="current.indicator.code"
+              :title="current.indicator.title"
+              :definition="current.indicator.criterion"
+              :levels="current.indicator.maturityLevels"
+            />
           </div>
 
           <div v-if="current.verification" class="review-feedback">
             <h3>Hasil verifikasi Pusdatin</h3>
-            <p><strong>Level final {{ currentFinalLevel?.level ?? '-' }} dari {{ current.indicator.maturityLevels.length }}</strong><span v-if="currentFinalLevel">: {{ currentFinalLevel.criterion }}</span></p>
+            <p><strong>Level final: {{ currentFinalLevel ? levelName(currentFinalLevel) : '-' }} (dari {{ current.indicator.maturityLevels.length }} level)</strong><span v-if="currentFinalLevel">. {{ currentFinalLevel.criterion }}</span></p>
             <p v-if="current.verification.comment">{{ current.verification.comment }}</p>
           </div>
 
@@ -414,6 +419,10 @@ onBeforeUnmount(() => {
               <p class="section-note">
                 {{ current.indicator.requiresEvidence ? 'Bukti wajib untuk indikator ini.' : 'Bukti bersifat opsional untuk indikator ini.' }}
               </p>
+            </div>
+            <div v-if="selectedLevelGuide?.evidenceGuide" class="criteria-block">
+              <h4>Bukti yang diharapkan untuk {{ levelName(selectedLevelGuide) }}</h4>
+              <p>{{ selectedLevelGuide.evidenceGuide }}</p>
             </div>
             <div v-if="current.evidence.length" class="evidence-list">
               <div v-for="link in current.evidence" :key="link.id" class="evidence-row">

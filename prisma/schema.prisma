@@ -161,7 +161,9 @@ model MaturityLevel {
   id          String     @id @default(cuid())
   indicatorId String
   level       Int
+  title       String     @default("")
   criterion   String
+  evidenceGuide String   @default("")
   indicator   Indicator  @relation(fields: [indicatorId], references: [id], onDelete: Restrict)
   responses   AssessmentResponse[]
   verifications ResponseVerification[]
