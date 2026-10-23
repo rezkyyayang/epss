@@ -46,6 +46,7 @@ defineExpose({ focusFirstLink })
       </nav>
     </div>
     <div class="sidebar-footer">
+      <NuxtLink to="/akun" :aria-current="route.path === '/akun' ? 'page' : undefined" @click="emit('navigate')">Akun dan kata sandi</NuxtLink>
       <NuxtLink to="/pusat-bantuan" @click="emit('navigate')">Pusat bantuan</NuxtLink>
       <span>Penilaian mandiri dan verifikasi</span>
     </div>

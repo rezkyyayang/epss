@@ -457,6 +457,40 @@ textarea:disabled {
   line-height: 1.45;
 }
 
+.field-hint.is-error {
+  color: var(--danger);
+}
+
+.account-panel {
+  max-width: 560px;
+}
+
+/* Password rules: each line turns green with a check as it is met, so the mark and the color agree. */
+.rule-list {
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rule-list li {
+  display: flex;
+  gap: 8px;
+}
+
+.rule-mark {
+  width: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rule-list li.is-met {
+  color: var(--success);
+}
+
 .control {
   width: 100%;
   min-height: 44px;
