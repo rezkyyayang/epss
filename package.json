@@ -21,6 +21,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
+    "exceljs": "^4.4.0",
     "nuxt": "^3.17.5",
     "pg": "^8.16.3",
     "zod": "^4.1.13"

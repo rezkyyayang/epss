@@ -92,6 +92,10 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
             <option v-for="period in data.periods" :key="period.id" :value="period.id">{{ period.name }}</option>
           </select>
         </div>
+        <div v-if="data.periodId && scoredRows.length" class="export-action">
+          <a class="btn btn-secondary" :href="`/api/admin/periods/${data.periodId}/export`" download>Unduh rekap Excel</a>
+          <span class="field-hint">{{ counts.verified ? `${counts.verified} unit terverifikasi berisi nilai akhir.` : 'Nilai akhir terisi setelah verifikasi dikirim.' }}</span>
+        </div>
       </div>
 
       <section class="stats-grid" aria-label="Ringkasan periode">

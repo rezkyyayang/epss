@@ -2893,8 +2893,15 @@ textarea.control {
   font-weight: 640;
 }
 
-.dashboard-filters {
-  max-width: 360px;
+.dashboard-filters .field {
+  width: min(100%, 320px);
+}
+
+.export-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
 }
 
 .unit-score-table .numeric {
