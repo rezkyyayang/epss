@@ -361,10 +361,10 @@ onBeforeUnmount(() => {
             <div class="indicator-step">
               <span class="pager-position">{{ currentIndex + 1 }} / {{ orderedResponses.length }}</span>
               <button class="btn btn-secondary btn-step" type="button" :disabled="!previousResponse || saving" :aria-label="previousResponse ? `Indikator sebelumnya, ${previousResponse.indicator.code}` : 'Indikator sebelumnya'" @click="goToResponse(previousResponse)">
-                <span aria-hidden="true">‹</span>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
               </button>
               <button class="btn btn-secondary btn-step" type="button" :disabled="!nextResponse || saving" :aria-label="nextResponse ? `Indikator berikutnya, ${nextResponse.indicator.code}` : 'Indikator berikutnya'" @click="goToResponse(nextResponse)">
-                <span aria-hidden="true">›</span>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
               </button>
             </div>
           </div>
