@@ -221,9 +221,13 @@ async function openAssessment(periodId: string, unitId: string, withActivity = f
       </div>
       <div class="score-layout">
         <div class="score-table-block">
-          <p class="score-total-chip" :class="{ 'is-pending': shownScore.total === null }">
-            <template v-if="shownScore.total !== null">{{ verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(shownScore.total) }} dari {{ shownScore.maxLevel }}<template v-if="scorePredicate(shownScore.total, shownScore.maxLevel)"> · Predikat {{ scorePredicate(shownScore.total, shownScore.maxLevel) }}</template></template>
-            <template v-else>Nilai total muncul setelah semua indikator memiliki level</template>
+          <p class="score-reading" :class="{ 'is-pending': shownScore.total === null }">
+            <template v-if="shownScore.total !== null">
+              <span class="score-reading-label">{{ verified ? 'Nilai final' : 'Nilai mandiri' }}</span>
+              <strong class="score-reading-value">{{ formatScore(shownScore.total) }}</strong>
+              <span class="score-reading-meta">dari {{ shownScore.maxLevel }}<template v-if="scorePredicate(shownScore.total, shownScore.maxLevel)"> · {{ scorePredicate(shownScore.total, shownScore.maxLevel) }}</template></span>
+            </template>
+            <template v-else>Nilai total muncul setelah semua indikator memiliki level.</template>
           </p>
           <p v-if="verified && selfScore?.total !== null && selfScore?.total !== undefined" class="score-compare">Nilai mandiri sebelum verifikasi: {{ formatScore(selfScore.total) }}<template v-if="scorePredicate(selfScore.total, selfScore.maxLevel)"> (predikat {{ scorePredicate(selfScore.total, selfScore.maxLevel) }})</template></p>
           <div class="data-table-wrap">

@@ -466,6 +466,17 @@ textarea:disabled {
   background: #fff2f1;
 }
 
+/* The confirming button of an irreversible action: the only filled red control in the app. */
+.btn-danger-solid {
+  color: #fff;
+  background: var(--danger);
+}
+
+.btn-danger-solid:hover {
+  color: #fff;
+  background: #912018;
+}
+
 .btn-small {
   min-height: 36px;
   padding: 7px 10px;
@@ -644,8 +655,10 @@ textarea.control {
   background: #fff3f2;
 }
 
+/* justify-self keeps the badge its own width inside grid cells (mobile records, history rows) instead of stretching. */
 .status-badge {
   display: inline-flex;
+  justify-self: start;
   min-height: 28px;
   align-items: center;
   gap: 7px;
@@ -746,7 +759,7 @@ textarea.control {
 .data-table th {
   color: #3d4b52;
   background: #f4f7fc;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 680;
   letter-spacing: 0.015em;
 }
@@ -2434,7 +2447,7 @@ textarea.control {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -2463,6 +2476,10 @@ textarea.control {
   --stat-accent: var(--success);
 }
 
+.stat-card--data {
+  --stat-accent: var(--data);
+}
+
 .stat-card span:first-child {
   color: #3d4b52;
   font-size: 13px;
@@ -2475,6 +2492,18 @@ textarea.control {
   font-weight: 690;
   letter-spacing: -0.03em;
   line-height: 1;
+}
+
+/* The scale after an average ("dari 3") reads as a unit, not as part of the number. */
+.stat-card strong small {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: 0;
+}
+
+.stat-card strong.is-empty {
+  color: var(--muted);
 }
 
 .stat-card span:last-child {
@@ -2756,6 +2785,11 @@ textarea.control {
 @media (max-width: 1050px) {
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Five cards in two columns: the average takes the last row on its own. */
+  .stat-card--data {
+    grid-column: 1 / -1;
   }
 
   .period-row {
@@ -3090,18 +3124,240 @@ textarea.control {
   gap: 6px 12px;
 }
 
+/* Switching periods keeps the old rows on screen, dimmed, until the new ones arrive. */
+.data-table-wrap.is-refreshing {
+  opacity: 0.55;
+  transition: opacity 120ms ease-out;
+}
+
 .unit-score-table .numeric {
   text-align: right;
   white-space: nowrap;
 }
 
-/* The unit whose chart dialog is open keeps a brand edge, so the row behind the backdrop stays identifiable. */
+.unit-score-table time {
+  white-space: nowrap;
+}
+
+/* The row whose chart or menu is open stays tinted, so it remains identifiable behind the overlay. */
 .unit-score-table tr.is-selected td {
   background: var(--brand-tint);
 }
 
-.unit-score-table tr.is-selected td:first-child {
-  box-shadow: inset 3px 0 0 var(--brand);
+/* Each action keeps its own column, so "Lihat grafik" and the menu line up down the table even when a row has no main action. */
+.row-actions {
+  display: grid;
+  grid-template-columns: 88px 128px 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-action-main { grid-column: 1; }
+.row-action-chart { grid-column: 2; }
+.row-action-more { grid-column: 3; }
+
+.row-action-chart svg {
+  flex: none;
+  color: var(--data);
+}
+
+.row-action-more {
+  width: 36px;
+  padding: 0;
+}
+
+.row-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 6px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgb(17 24 28 / 0.16);
+}
+
+.row-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--radius-small);
+  padding: 8px 12px;
+  color: var(--brand-deep);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 620;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-menu-item:hover {
+  background: #f0f5fb;
+}
+
+.row-menu-item.is-danger {
+  color: #8b1a14;
+}
+
+.row-menu-item.is-danger:hover {
+  background: #fff2f1;
+}
+
+.row-menu-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Confirmation for reset and reopen: states what is affected before anything happens. */
+.action-dialog {
+  width: min(520px, calc(100% - 32px));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(17 24 28 / 0.18);
+}
+
+.action-dialog::backdrop {
+  background: rgb(17 24 28 / 0.45);
+}
+
+.action-dialog-body {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px 22px;
+}
+
+.action-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.action-dialog-header h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 660;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.action-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  background: #f8faff;
+}
+
+.action-facts div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.action-facts dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.action-facts dd {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.action-loss {
+  border: 1px solid #f0c7c2;
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  color: #5f1612;
+  background: #fff6f5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.action-loss p {
+  margin: 0;
+}
+
+.action-loss ul {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.action-note {
+  margin: 0;
+  color: #34434a;
+  line-height: 1.55;
+}
+
+textarea.control.action-reason {
+  min-height: 96px;
+}
+
+.action-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 620;
+}
+
+.action-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 780px) {
+  /* In the card layout the actions take the full card width under their label, at full tap-target height. */
+  .mobile-records .data-table td.row-actions-cell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .row-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 44px;
+  }
+
+  /* One card at a time has no column to line up with, so a row without a main action closes the gap. */
+  .row-actions .row-action-chart:first-child {
+    grid-column: 1 / 3;
+  }
+
+  .row-actions .btn {
+    min-height: 44px;
+  }
+
+  .row-action-more {
+    width: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .action-dialog-body {
+    padding: 18px 16px 16px;
+  }
+
+  .action-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .action-dialog-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 .table-actions {
@@ -3243,22 +3499,72 @@ textarea.control {
   gap: 12px;
 }
 
-.score-total-chip {
-  justify-self: end;
+/* The total is a reading, not a control: a large number with its scale and predicate, no filled shape. */
+.score-reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
   margin: 0;
-  border-radius: 8px;
-  padding: 7px 12px;
-  color: #fff;
-  background: var(--data);
-  font-size: 14px;
-  font-weight: 640;
 }
 
-.score-total-chip.is-pending {
-  border: 1px solid var(--border);
+.score-reading-label {
+  flex-basis: 100%;
   color: var(--muted);
-  background: #f5f8fd;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.score-reading-value {
+  color: var(--brand-deep);
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.score-reading-meta {
+  color: #3d4b52;
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.score-reading.is-pending {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Stays in view while the dialog scrolls: stepping to the next unit or acting on this one is always one tap away. */
+.score-dialog-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  background: var(--surface);
+}
+
+.score-dialog-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-dialog-nav .btn svg {
+  flex: none;
+}
+
+.score-dialog-position {
+  min-width: 64px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .score-table .numeric {
@@ -3295,7 +3601,7 @@ textarea.control {
 
 .radar-tick {
   fill: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .radar-shape {
@@ -3327,7 +3633,13 @@ textarea.control {
 
 .radar-label {
   fill: #3d4b52;
+  font-size: 13px;
+}
+
+.radar-label-empty {
+  fill: var(--muted);
   font-size: 12px;
+  font-style: italic;
 }
 
 @media (max-width: 1050px) {
@@ -3371,8 +3683,17 @@ textarea.control {
     padding: 16px;
   }
 
-  .score-total-chip {
-    justify-self: stretch;
-    text-align: center;
+  .score-dialog-footer {
+    padding: 12px 16px;
+  }
+
+  .score-dialog-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .score-dialog-footer > .btn {
+    width: 100%;
+    min-height: 44px;
   }
 }

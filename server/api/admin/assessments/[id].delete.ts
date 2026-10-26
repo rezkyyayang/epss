@@ -18,6 +18,10 @@ export default defineEventHandler(async (event) => {
       where: { id },
       select: { periodId: true, unitId: true, createdById: true, status: true, activityName: true, activityYear: true },
     })
+    // A sent verification result is reopened, never deleted, so the unit's final scores keep a trail.
+    if (existing.status === 'VERIFIED') {
+      throw createError({ statusCode: 409, statusMessage: 'Hasil verifikasi sudah dikirim. Buka ulang verifikasi bila perlu diubah.' })
+    }
     await tx.assessment.delete({ where: { id } })
     await tx.auditEvent.create(auditData(user.id, 'assessment_reset', 'Assessment', id, existing))
   })

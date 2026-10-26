@@ -11,7 +11,17 @@ export default defineEventHandler(async (event) => {
     orderBy: [{ startsAt: 'desc' }, { createdAt: 'desc' }],
   })
   const requested = typeof query.periodId === 'string' ? periods.find(({ id }) => id === query.periodId) : undefined
-  const period = requested ?? periods.find(({ status }) => status === 'ACTIVE') ?? periods[0]
+  // Without a choice, open the active period with the most submissions waiting, since that is where the work is.
+  const waiting = requested ? [] : await prisma.assessment.groupBy({
+    by: ['periodId'],
+    where: { status: { in: ['SUBMITTED', 'IN_REVIEW'] }, period: { status: 'ACTIVE' } },
+    _count: { _all: true },
+  })
+  const busiest = [...waiting].sort((a, b) => b._count._all - a._count._all)[0]
+  const period = requested
+    ?? periods.find(({ id }) => id === busiest?.periodId)
+    ?? periods.find(({ status }) => status === 'ACTIVE')
+    ?? periods[0]
   if (!period) return { periods, periodId: null, rows: [] }
 
   const [assignments, assessments] = await Promise.all([
@@ -36,6 +46,8 @@ export default defineEventHandler(async (event) => {
             maturityLevelId: true,
             explanation: true,
             verification: { select: { maturityLevelId: true } },
+            // The reset dialog says how many evidence links would be lost.
+            _count: { select: { evidence: true } },
             indicator: {
               select: {
                 id: true,

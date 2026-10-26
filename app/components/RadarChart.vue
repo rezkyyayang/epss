@@ -57,10 +57,12 @@ const labels = computed(() => props.domains.map((domain, index) => {
   const y = center + Math.sin(angle) * (radius + labelGap)
   const cos = Math.cos(angle)
   const anchor = Math.abs(cos) < 0.2 ? 'middle' : cos > 0 ? 'start' : 'end'
-  const lines = wrap(domain.name)
+  // An incomplete domain sits at the centre, which reads as a real zero unless its label says otherwise.
+  const empty = domain.score === null
+  const lines = empty ? [...wrap(domain.name), 'belum diisi'] : wrap(domain.name)
   // Labels above the chart grow upward, labels below grow downward.
-  const firstLineY = Math.sin(angle) < -0.2 ? y - (lines.length - 1) * 13 : Math.abs(Math.sin(angle)) <= 0.2 ? y - ((lines.length - 1) * 13) / 2 : y + 4
-  return { id: domain.id, x, firstLineY, anchor, lines }
+  const firstLineY = Math.sin(angle) < -0.2 ? y - (lines.length - 1) * 14 : Math.abs(Math.sin(angle)) <= 0.2 ? y - ((lines.length - 1) * 14) / 2 : y + 4
+  return { id: domain.id, x, firstLineY, anchor, lines, empty }
 }))
 
 const summary = computed(() => props.domains
@@ -83,7 +85,13 @@ const summary = computed(() => props.domains
       <circle class="radar-marker" :class="{ 'is-empty': vertex.score === null }" :cx="vertex.x" :cy="vertex.y" r="4" />
     </g>
     <text v-for="label in labels" :key="`label-${label.id}`" class="radar-label" :text-anchor="label.anchor" aria-hidden="true">
-      <tspan v-for="(line, index) in label.lines" :key="index" :x="label.x" :y="label.firstLineY + index * 13">{{ line }}</tspan>
+      <tspan
+        v-for="(line, index) in label.lines"
+        :key="index"
+        :class="{ 'radar-label-empty': label.empty && index === label.lines.length - 1 }"
+        :x="label.x"
+        :y="label.firstLineY + index * 14"
+      >{{ line }}</tspan>
     </text>
   </svg>
 </template>

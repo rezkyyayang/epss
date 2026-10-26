@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{ status: string }>()
+// NOT_STARTED is not an assessment status: it labels a unit that has no assessment yet.
 const labels: Record<string, string> = {
+  NOT_STARTED: 'Belum mulai',
   DRAFT: 'Draf',
   SUBMITTED: 'Menunggu verifikasi',
   IN_REVIEW: 'Dalam verifikasi',
@@ -9,6 +11,7 @@ const labels: Record<string, string> = {
   CLOSED: 'Ditutup',
 }
 const tones: Record<string, string> = {
+  NOT_STARTED: 'status-neutral',
   DRAFT: 'status-neutral',
   SUBMITTED: 'status-info',
   IN_REVIEW: 'status-warning',
