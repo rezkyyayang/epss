@@ -101,3 +101,4 @@ npm run units:seed
 `npm run test:api` runs the API regression tests in `tests/api/` against a running server. Point it at a server backed by a disposable database, because each run creates accounts and units. Set `SECTORA_TEST_URL` (included in `APP_ORIGIN`), `SECTORA_TEST_ADMIN_EMAIL`, and `SECTORA_TEST_ADMIN_PASSWORD`; without them the tests are skipped.
 
 //Redeploy 1 - 20261023
+//Redeploy 2 - 20261026
