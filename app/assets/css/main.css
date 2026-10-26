@@ -3095,7 +3095,7 @@ textarea.control {
   white-space: nowrap;
 }
 
-/* The unit whose radar is shown below keeps a brand edge so the table and chart read as one. */
+/* The unit whose chart dialog is open keeps a brand edge, so the row behind the backdrop stays identifiable. */
 .unit-score-table tr.is-selected td {
   background: var(--brand-tint);
 }
@@ -3179,6 +3179,55 @@ textarea.control {
   flex-shrink: 0;
   align-items: center;
   gap: 12px;
+}
+
+/* Wide enough that the domain table and the radar sit side by side on a desktop screen. */
+.score-dialog {
+  width: min(1040px, calc(100% - 32px));
+  max-height: min(90vh, 960px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(17 24 28 / 0.18);
+}
+
+.score-dialog::backdrop {
+  background: rgb(17 24 28 / 0.45);
+}
+
+/* The header stays in view when the dialog scrolls, so the close button is always one tap away. */
+.score-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.dialog-close {
+  display: inline-grid;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  margin: -8px -8px -8px 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  border-color: var(--border);
+  color: var(--text);
+  background: #edf3fa;
+}
+
+.dialog-close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .score-layout {

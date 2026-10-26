@@ -51,12 +51,32 @@ const counts = computed(() => {
 })
 
 const selectedUnitId = ref('')
-const selectedRow = computed((): ScoredRow | undefined => {
-  const rows = scoredRows.value.filter((row: ScoredRow) => row.self)
-  return rows.find((row: ScoredRow) => row.unit.id === selectedUnitId.value) ?? rows.find((row: ScoredRow) => row.verified) ?? rows[0]
-})
+const selectedRow = computed((): ScoredRow | undefined => scoredRows.value.find((row: ScoredRow) => row.self && row.unit.id === selectedUnitId.value))
 const selectedScore = computed(() => selectedRow.value?.final ?? selectedRow.value?.self ?? null)
 const selectedHasGap = computed(() => Boolean(selectedScore.value?.domains.some((domain: DomainScore) => domain.score === null)))
+
+const chartDialog = ref<HTMLDialogElement | null>(null)
+let chartTrigger: HTMLElement | null = null
+// The content renders on the next tick; opening after it lets the browser autofocus the close button.
+async function openChart(row: ScoredRow, event: MouseEvent) {
+  chartTrigger = event.currentTarget as HTMLElement
+  selectedUnitId.value = row.unit.id
+  await nextTick()
+  chartDialog.value?.showModal()
+}
+function closeChart() {
+  chartDialog.value?.close()
+}
+// Escape, the close button, and a backdrop click all end here, so focus always returns to the row's button.
+function onChartClosed() {
+  selectedUnitId.value = ''
+  chartTrigger?.focus()
+  chartTrigger = null
+}
+// A click that lands on the dialog element itself, not its content, is a click on the backdrop.
+function onChartDialogClick(event: MouseEvent) {
+  if (event.target === chartDialog.value) closeChart()
+}
 
 // Reset removes the unit's assessment entirely, so the unit fills the period again from the start.
 const resettingId = ref('')
@@ -124,7 +144,7 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
 
       <section class="panel" aria-labelledby="unit-scores-heading">
         <div class="panel-header">
-          <div><h2 id="unit-scores-heading">Nilai per unit kerja</h2><p>Pilih unit untuk melihat nilai per domain dan radar chart-nya.</p></div>
+          <div><h2 id="unit-scores-heading">Nilai per unit kerja</h2><p>Pilih Lihat grafik untuk membuka nilai per domain dan radar chart sebuah unit.</p></div>
           <NuxtLink class="btn btn-secondary btn-small" to="/admin/queue">Antrean verifikasi</NuxtLink>
         </div>
         <div v-if="scoredRows.length" class="data-table-wrap mobile-records">
@@ -139,7 +159,7 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
                 <td data-label="Nilai final" class="numeric"><strong>{{ total(row.final) }}</strong></td>
                 <td data-label="Aksi">
                   <div class="table-actions">
-                    <button v-if="row.self" class="btn btn-quiet btn-small" type="button" :aria-pressed="selectedRow?.unit.id === row.unit.id" @click="selectedUnitId = row.unit.id">Lihat grafik</button>
+                    <button v-if="row.self" class="btn btn-quiet btn-small" type="button" aria-haspopup="dialog" @click="openChart(row, $event)">Lihat grafik</button>
                     <NuxtLink v-if="row.assessment && row.assessment.status !== 'DRAFT'" class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.assessment.id}`">{{ row.verified ? 'Hasil' : 'Verifikasi' }}</NuxtLink>
                     <button v-if="row.assessment" class="btn btn-danger btn-small" type="button" :disabled="resettingId === row.assessment.id" @click="resetAssessment(row)">{{ resettingId === row.assessment.id ? 'Mereset...' : 'Reset' }}</button>
                   </div>
@@ -151,45 +171,52 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
         <EmptyState v-else title="Belum ada unit ditugaskan" message="Tugaskan unit kerja ke periode ini dari halaman pengaturan periode." action-label="Kelola periode" action-to="/admin/periods" />
       </section>
 
-      <section v-if="selectedRow && selectedScore" class="panel" aria-labelledby="unit-detail-heading">
-        <div class="panel-header score-header">
-          <div>
-            <h2 id="unit-detail-heading">{{ selectedRow.unit.name }}</h2>
-            <p>{{ selectedRow.verified ? 'Nilai final hasil verifikasi Pusdatin.' : 'Nilai mandiri dari unit kerja. Nilai final muncul setelah verifikasi dikirim.' }}</p>
-          </div>
-          <div class="score-actions">
-            <StatusBadge v-if="selectedRow.assessment" :status="selectedRow.assessment.status" />
-          </div>
-        </div>
-        <div class="score-layout">
-          <div class="score-table-block">
-            <p class="score-total-chip" :class="{ 'is-pending': selectedScore.total === null }">
-              <template v-if="selectedScore.total !== null">{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(selectedScore.total) }} dari {{ selectedScore.maxLevel }}<template v-if="scorePredicate(selectedScore.total, selectedScore.maxLevel)"> · Predikat {{ scorePredicate(selectedScore.total, selectedScore.maxLevel) }}</template></template>
-              <template v-else>Nilai total muncul setelah semua indikator memiliki level</template>
-            </p>
-            <div class="data-table-wrap">
-              <table class="data-table score-table">
-                <thead><tr><th scope="col">Domain</th><th scope="col" class="numeric">Bobot</th><th scope="col" class="numeric">Mandiri</th><th v-if="selectedRow.verified" scope="col" class="numeric">Final</th></tr></thead>
-                <tbody>
-                  <tr v-for="(domain, index) in selectedScore.domains" :key="domain.id">
-                    <td>{{ index + 1 }}. {{ domain.name }}</td>
-                    <td class="numeric">{{ domain.weight }}%</td>
-                    <td class="numeric">{{ domainValue(selectedRow.self, domain.id) }}</td>
-                    <td v-if="selectedRow.verified" class="numeric"><strong>{{ domainValue(selectedRow.final, domain.id) }}</strong></td>
-                  </tr>
-                </tbody>
-              </table>
+      <dialog ref="chartDialog" class="score-dialog" aria-labelledby="unit-detail-heading" @click="onChartDialogClick" @close="onChartClosed">
+        <template v-if="selectedRow && selectedScore">
+          <div class="panel-header score-header score-dialog-header">
+            <div>
+              <h2 id="unit-detail-heading">{{ selectedRow.unit.name }}</h2>
+              <p>{{ selectedRow.verified ? 'Nilai final hasil verifikasi Pusdatin.' : 'Nilai mandiri dari unit kerja. Nilai final muncul setelah verifikasi dikirim.' }}</p>
+            </div>
+            <div class="score-actions">
+              <StatusBadge v-if="selectedRow.assessment" :status="selectedRow.assessment.status" />
+              <button class="dialog-close" type="button" aria-label="Tutup grafik" title="Tutup" autofocus @click="closeChart">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                  <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
             </div>
           </div>
-          <figure class="score-chart">
-            <RadarChart :domains="selectedScore.domains" :max="selectedScore.maxLevel" />
-            <figcaption>
-              {{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ selectedRow.unit.code }} pada skala 0 sampai {{ selectedScore.maxLevel }}.
-              <template v-if="selectedHasGap">Domain yang belum lengkap tampil di titik nol.</template>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+          <div class="score-layout">
+            <div class="score-table-block">
+              <p class="score-total-chip" :class="{ 'is-pending': selectedScore.total === null }">
+                <template v-if="selectedScore.total !== null">{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ formatScore(selectedScore.total) }} dari {{ selectedScore.maxLevel }}<template v-if="scorePredicate(selectedScore.total, selectedScore.maxLevel)"> · Predikat {{ scorePredicate(selectedScore.total, selectedScore.maxLevel) }}</template></template>
+                <template v-else>Nilai total muncul setelah semua indikator memiliki level</template>
+              </p>
+              <div class="data-table-wrap">
+                <table class="data-table score-table">
+                  <thead><tr><th scope="col">Domain</th><th scope="col" class="numeric">Bobot</th><th scope="col" class="numeric">Mandiri</th><th v-if="selectedRow.verified" scope="col" class="numeric">Final</th></tr></thead>
+                  <tbody>
+                    <tr v-for="(domain, index) in selectedScore.domains" :key="domain.id">
+                      <td>{{ index + 1 }}. {{ domain.name }}</td>
+                      <td class="numeric">{{ domain.weight }}%</td>
+                      <td class="numeric">{{ domainValue(selectedRow.self, domain.id) }}</td>
+                      <td v-if="selectedRow.verified" class="numeric"><strong>{{ domainValue(selectedRow.final, domain.id) }}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <figure class="score-chart">
+              <RadarChart :domains="selectedScore.domains" :max="selectedScore.maxLevel" />
+              <figcaption>
+                {{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ selectedRow.unit.code }} pada skala 0 sampai {{ selectedScore.maxLevel }}.
+                <template v-if="selectedHasGap">Domain yang belum lengkap tampil di titik nol.</template>
+              </figcaption>
+            </figure>
+          </div>
+        </template>
+      </dialog>
 
       <section class="panel panel-body admin-shortcuts">
         <div><h2 class="section-title">Pengaturan</h2><p class="section-note">Siapkan periode, katalog indikator berbobot, akun, dan unit.</p></div>
