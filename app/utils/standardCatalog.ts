@@ -2,6 +2,7 @@
 // owner's instrument sheet (instrumen.xlsx, "Instrument Final"). Line breaks the sheet carried over from its
 // source document are joined; lists stay one item per line so the guide renders them as lists.
 // The sheet names domains only by number, so the names stay "Domain N" until the owner renames them.
+// Levels 4 and 5 are the same for every indicator, so they are added once in buildStandardCatalog.
 interface StandardLevel { title: string; criterion: string; evidenceGuide?: string }
 interface StandardIndicator { title: string; weight: number; definition: string; levels: [StandardLevel, StandardLevel, StandardLevel] }
 interface StandardDomain { name: string; weight: number; indicators: StandardIndicator[] }
@@ -169,6 +170,11 @@ const standardDomains: StandardDomain[] = [
   },
 ]
 
+const sharedUpperLevels: StandardLevel[] = [
+  { title: 'Reviu dan Evaluasi Berkala', criterion: 'Telah dilakukan reviu dan evaluasi secara berkala.' },
+  { title: 'Pemutakhiran Bersama Walidata', criterion: 'Telah dilakukan pemutakhiran oleh Produsen Data bersama Walidata dalam rangka peningkatan kualitas.' },
+]
+
 export function buildStandardCatalog() {
   return standardDomains.map((domain, domainIndex) => ({
     code: `D${domainIndex + 1}`,
@@ -180,7 +186,7 @@ export function buildStandardCatalog() {
       criterion: indicator.definition,
       weight: indicator.weight,
       requiresEvidence: false,
-      maturityLevels: indicator.levels.map(({ title, criterion, evidenceGuide }, levelIndex) => ({ level: levelIndex + 1, title, criterion, evidenceGuide: evidenceGuide ?? '' })),
+      maturityLevels: [...indicator.levels, ...sharedUpperLevels].map(({ title, criterion, evidenceGuide }, levelIndex) => ({ level: levelIndex + 1, title, criterion, evidenceGuide: evidenceGuide ?? '' })),
     })),
   }))
 }

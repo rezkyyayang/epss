@@ -141,7 +141,7 @@ export default defineEventHandler(async (event) => {
     ['Nilai akhir', 'Dihitung dari level final Pusdatin. Kosong bila verifikasi belum dikirim.'],
     ['Nilai per indikator', 'Level final hasil verifikasi Pusdatin untuk tiap indikator.'],
     ['Rumus', 'Jumlah (bobot domain × jumlah (bobot indikator × level)), bobot dalam pecahan.'],
-    ['Predikat (skala 1–3)', predicateBands.map(({ min, label }) => `${label} ≥ ${min.toFixed(2).replace('.', ',')}`).join('; ')],
+    ['Predikat (skala 1–5)', predicateBands.map(({ min, label }) => min ? `${label} ≥ ${min.toFixed(2).replace('.', ',')}` : label).join('; ')],
   ])
   notes.getColumn(1).font = { bold: true }
 

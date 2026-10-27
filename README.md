@@ -74,9 +74,9 @@ Evidence is a list of links, not uploaded files. Users paste up to 10 `http`/`ht
 - Flow: the unit names its one statistical activity for the period (name and year), fills a level, an explanation and evidence links per indicator, and submits. Submitting locks the answers.
 - Admins (Pusdatin) see every unit. For each indicator they set a final level and a verification comment, then send the verification result, which locks it and shows the final scores to the unit.
 - Unit assignment and indicator catalogs lock when the first assessment for a period is created.
-- Each period's catalog is Domain → Indicator → maturity levels (2 to 5). Domains and indicators carry whole-percent weights: domain weights in a period total 100, and indicator weights in each domain total 100. The catalog editor can fill in the standard catalog (5 domains, 13 indicators, 3 levels each).
+- Each period's catalog is Domain → Indicator → maturity levels (2 to 5). Domains and indicators carry whole-percent weights: domain weights in a period total 100, and indicator weights in each domain total 100. The catalog editor can fill in the standard catalog (5 domains, 13 indicators, 5 levels each; levels 4 and 5 are the same for every indicator).
 - The weighted score is the sum of (domain weight × sum of (indicator weight × chosen level)). It appears only when every indicator has a saved level. The self-assessment score uses the unit's levels; the final score uses Pusdatin's verified levels.
-- On a three-level catalog, each total gets an index predicate: 2,34 to 3,00 Memuaskan, 1,67 to under 2,34 Cukup, 1,00 to under 1,67 Kurang. The band follows the score as shown (two decimals). Catalogs on another scale show no predicate.
+- On a five-level catalog, each total gets an index predicate: 4,20 to 5,00 Memuaskan, 3,50 to under 4,20 Sangat Baik, 2,60 to under 3,50 Baik, 1,80 to under 2,60 Cukup, under 1,80 Kurang. The band follows the score as shown (two decimals). Catalogs on another scale show no predicate.
 - Statuses: Draf → Menunggu verifikasi → Dalam verifikasi → Terverifikasi. There is no revision round; status and audit events are stored in PostgreSQL.
 - There is no sample submission or score seed.
 

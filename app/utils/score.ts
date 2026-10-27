@@ -37,17 +37,19 @@ export function withFinalLevels<T extends { verification?: { maturityLevelId: st
   return responses.map((response) => ({ ...response, maturityLevelId: response.verification?.maturityLevelId ?? null }))
 }
 
-// Index predicate bands, defined for the 1 to 3 scale only. A catalog on another scale has no agreed
-// bands, so its score gets no predicate.
+// Index predicate bands (Tabel 10, Predikat Penilaian Tingkat Kematangan), defined for the 1 to 5 scale only.
+// A catalog on another scale has no agreed bands, so its score gets no predicate.
 export const predicateBands = [
-  { min: 2.34, label: 'Memuaskan' },
-  { min: 1.67, label: 'Cukup' },
-  { min: 1, label: 'Kurang' },
+  { min: 4.2, label: 'Memuaskan' },
+  { min: 3.5, label: 'Sangat Baik' },
+  { min: 2.6, label: 'Baik' },
+  { min: 1.8, label: 'Cukup' },
+  { min: 0, label: 'Kurang' },
 ] as const
 
 // The band follows the score as displayed (two decimals), so the number and its label never disagree.
 export function scorePredicate(total: number | null, maxLevel: number) {
-  if (total === null || maxLevel !== 3) return null
+  if (total === null || maxLevel !== 5) return null
   const shown = Number(total.toFixed(2))
   return predicateBands.find(({ min }) => shown >= min)?.label ?? null
 }
