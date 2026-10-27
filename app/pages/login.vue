@@ -40,8 +40,8 @@ async function signIn() {
         <div>
           <p class="auth-product-name">Monastik</p>
           <p class="auth-kicker">Penilaian internal</p>
-          <h1>Jawaban dan bukti, dalam satu alur.</h1>
-          <p>Isi indikator yang ditugaskan, lalu lihat level final dari Pusdatin setelah verifikasi selesai.</p>
+          <h1>Monitoring Indeks Pembangunan Statistik</h1>
+          <p>Tools penilaian indikator evaluasi penyelenggaraan statistik sektoral internal Lembaga Administrasi Negara.</p>
         </div>
       </section>
       <form class="auth-form" @submit.prevent="signIn">

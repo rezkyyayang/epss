@@ -14,15 +14,15 @@ export default defineNuxtConfig({
     sessionCookieName: 'sectora_session',
     sessionDurationHours: 12,
     public: {
-      appName: 'Sectoral',
+      appName: 'Monastik',
     },
   },
   app: {
     head: {
       htmlAttrs: { lang: 'id' },
-      title: 'Sectoral',
+      title: 'Monastik',
       meta: [
-        { name: 'description', content: 'Penilaian dan pemeriksaan indikator internal.' },
+        { name: 'description', content: 'Monitoring Indeks Pembangunan Statistik LANRI' },
         { name: 'theme-color', content: '#174A8B' },
       ],
       link: [{ rel: 'icon', type: 'image/png', href: '/lan-ri-favicon.png' }],
