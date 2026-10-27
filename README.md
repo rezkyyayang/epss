@@ -60,6 +60,7 @@ Copy `.env.example` to `.env` for local development. Keep `.env` out of version 
 | Setting | Purpose |
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_POOL_MAX` | Connections each server process may hold (default 5). Keep it times the number of server processes under the database's client limit; Supabase session mode allows 15 in total |
 | `APP_ORIGIN` | Comma-separated origin allowlist for mutation requests; local development accepts both loopback URLs |
 | `SESSION_DURATION_HOURS` | Database session and cookie lifetime |
 | `TRUST_PROXY` | Set to `true` only behind a reverse proxy that appends `X-Forwarded-For`; login throttling then keys on the client address the proxy reports |
