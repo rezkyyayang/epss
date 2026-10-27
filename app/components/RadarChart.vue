@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { formatScore } from '../utils/score'
 
-// One series of domain scores on a 0..max scale. The score table beside it is the exact view,
-// so the chart carries shape only: no legend (single series) and values on hover.
-const props = defineProps<{ domains: Array<{ id: string; name: string; score: number | null }>; max: number }>()
+// Domain scores on a 0..max scale. The score table beside it is the exact view, so the chart carries
+// shape only, with values on hover. Optional reference lines (a target, an average) are drawn unfilled
+// over the score; each needs a value for every domain. The caller draws the legend when it passes references.
+interface Reference { id: string; label: string; tone: 'target' | 'average'; values: Record<string, number | null | undefined> }
+const props = defineProps<{ domains: Array<{ id: string; name: string; score: number | null }>; max: number; references?: Reference[] }>()
 
 const size = 320
 const center = size / 2
@@ -65,9 +67,14 @@ const labels = computed(() => props.domains.map((domain, index) => {
   return { id: domain.id, x, firstLineY, anchor, lines, empty }
 }))
 
-const summary = computed(() => props.domains
-  .map(({ name, score }) => `${name} ${score === null ? 'belum lengkap' : formatScore(score)}`)
-  .join(', '))
+const referenceShapes = computed(() => (props.references || [])
+  .filter(({ values }) => props.domains.every(({ id }) => typeof values[id] === 'number'))
+  .map((reference) => ({ ...reference, points: toPoints(props.domains.map(({ id }) => reference.values[id] as number)) })))
+
+const summary = computed(() => [
+  props.domains.map(({ name, score }) => `${name} ${score === null ? 'belum lengkap' : formatScore(score)}`).join(', '),
+  ...referenceShapes.value.map(({ label, values }: Reference) => `${label}: ${props.domains.map(({ id, name }) => `${name} ${formatScore(values[id] as number)}`).join(', ')}`),
+].join('. '))
 </script>
 
 <template>
@@ -78,6 +85,7 @@ const summary = computed(() => props.domains
       <text v-for="tick in ticks" :key="`tick-${tick.level}`" class="radar-tick" :x="tick.x + 3" :y="tick.y - 3">{{ tick.level }}</text>
     </g>
     <polygon v-if="hasScore" class="radar-shape" :points="shape" />
+    <polygon v-for="reference in referenceShapes" :key="reference.id" class="radar-reference" :class="`radar-reference--${reference.tone}`" :points="reference.points" />
     <g v-for="vertex in vertices" :key="vertex.id" class="radar-vertex">
       <circle class="radar-hit" :cx="vertex.x" :cy="vertex.y" r="14">
         <title>{{ vertex.name }}: {{ vertex.score === null ? 'belum lengkap' : formatScore(vertex.score) }}</title>

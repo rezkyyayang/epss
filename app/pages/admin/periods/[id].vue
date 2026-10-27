@@ -48,6 +48,41 @@ async function savePeriod() {
   } catch (error) { pageError.value = getApiError(error, 'Pengaturan periode belum dapat disimpan.') }
   finally { saving.value = false }
 }
+// Domain targets: a reference score per domain, shown beside unit results. Editable even after the catalog locks.
+interface CatalogDomain { id: string; code: string; name: string; weight: number; target: number | null; indicators: Array<{ maturityLevels: Array<{ level: number }> }> }
+const { data: catalogData, refresh: refreshCatalog } = useFetch<{ domains: CatalogDomain[] }>(`/api/admin/periods/${periodId}/catalog`, { lazy: true })
+const catalogDomains = computed(() => catalogData.value?.domains || [])
+const maxLevelOf = (domain: CatalogDomain) => Math.max(0, ...domain.indicators.flatMap(({ maturityLevels }) => maturityLevels.map(({ level }) => level)))
+// Inputs hold text so a cleared field reads as "no target" rather than 0.
+const targetInputs = ref<Record<string, string>>({})
+watch(catalogDomains, (domains: CatalogDomain[]) => {
+  targetInputs.value = Object.fromEntries(domains.map(({ id, target }) => [id, target === null ? '' : String(target)]))
+}, { immediate: true })
+const parsedTarget = (id: string) => {
+  const text = (targetInputs.value[id] ?? '').trim().replace(',', '.')
+  return text === '' ? null : Number(text)
+}
+const targetErrors = computed(() => Object.fromEntries(catalogDomains.value.map((domain: CatalogDomain) => {
+  const value = parsedTarget(domain.id)
+  const max = maxLevelOf(domain)
+  return [domain.id, value !== null && (!Number.isFinite(value) || value < 0 || value > max) ? `Isi angka 0 sampai ${max}.` : '']
+})))
+const targetsChanged = computed(() => catalogDomains.value.some((domain: CatalogDomain) => parsedTarget(domain.id) !== domain.target))
+const weightedTarget = computed(() => {
+  const domains = catalogDomains.value
+  if (!domains.length || domains.some((domain: CatalogDomain) => parsedTarget(domain.id) === null || targetErrors.value[domain.id])) return null
+  return domains.reduce((sum: number, domain: CatalogDomain) => sum + domain.weight / 100 * (parsedTarget(domain.id) as number), 0)
+})
+async function saveTargets() {
+  if (Object.values(targetErrors.value).some(Boolean)) return
+  saving.value = true; pageError.value = ''; message.value = ''
+  try {
+    await $fetch(`/api/admin/periods/${periodId}/targets`, { method: 'PUT', body: { targets: catalogDomains.value.map((domain: CatalogDomain) => ({ domainId: domain.id, target: parsedTarget(domain.id) })) } })
+    message.value = 'Nilai target tersimpan.'; await refreshCatalog()
+  } catch (error) { pageError.value = getApiError(error, 'Nilai target belum dapat disimpan.') }
+  finally { saving.value = false }
+}
+
 async function saveAssignments() {
   saving.value = true; pageError.value = ''; message.value = ''
   try {
@@ -80,6 +115,33 @@ async function saveAssignments() {
         </div>
         <div class="form-actions"><button class="btn btn-primary" type="submit" :disabled="saving">Simpan perubahan</button><NuxtLink class="btn btn-secondary" :to="`/admin/periods/${periodId}/catalog`">Kelola katalog</NuxtLink></div>
       </form>
+    </section>
+
+    <section class="panel" aria-labelledby="targets-heading">
+      <div class="panel-header"><div><h2 id="targets-heading">Nilai target per domain</h2><p>Acuan yang tampil di grafik unit. Tetap dapat diubah setelah penilaian berjalan.</p></div></div>
+      <form v-if="catalogDomains.length" class="panel-body form-stack" novalidate @submit.prevent="saveTargets">
+        <div class="target-grid">
+          <div v-for="(domain, index) in catalogDomains" :key="domain.id" class="field">
+            <label :for="`target-${domain.id}`">{{ index + 1 }}. {{ domain.name }} <span class="record-meta">· bobot {{ domain.weight }}%</span></label>
+            <input
+              :id="`target-${domain.id}`"
+              v-model="targetInputs[domain.id]"
+              class="control"
+              type="text"
+              inputmode="decimal"
+              :placeholder="`0 sampai ${maxLevelOf(domain)}`"
+              :aria-invalid="Boolean(targetErrors[domain.id])"
+              :aria-describedby="`target-hint-${domain.id}`"
+            >
+            <p :id="`target-hint-${domain.id}`" class="field-hint" :class="{ 'is-error': targetErrors[domain.id] }">{{ targetErrors[domain.id] || 'Kosongkan bila belum ada target.' }}</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" :disabled="saving || !targetsChanged || Object.values(targetErrors).some(Boolean)">Simpan target</button>
+          <span class="field-hint">Target total tertimbang: <strong>{{ weightedTarget === null ? '-' : weightedTarget.toFixed(2).replace('.', ',') }}</strong></span>
+        </div>
+      </form>
+      <p v-else class="panel-body field-hint">Susun katalog indikator terlebih dahulu, lalu tetapkan target per domain.</p>
     </section>
 
     <section class="panel">

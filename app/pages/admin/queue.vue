@@ -68,7 +68,7 @@ const visibleRows = computed(() => (data.value?.assessments || []).filter((row) 
           <td data-label="Verifikasi"><AssessmentProgress :complete="row.verifiedResponses" :total="row.totalResponses" /></td>
           <td data-label="Pengisi">{{ row.createdBy.displayName }}</td>
           <td data-label="Dikirim">{{ formatDate(row.submittedAt) }}</td>
-          <td data-label="Aksi"><NuxtLink class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.id}`">{{ row.status === 'VERIFIED' ? 'Lihat hasil' : 'Verifikasi' }}</NuxtLink></td>
+          <td data-label="Aksi"><NuxtLink class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.id}`">{{ row.status === 'VERIFIED' ? 'Lihat hasil' : !row.verifier || row.verifier.id === auth.user.value?.id ? 'Verifikasi' : 'Lihat' }}</NuxtLink></td>
         </tr></tbody>
       </table>
     </div>

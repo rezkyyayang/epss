@@ -1,5 +1,5 @@
 import { assertSameOrigin } from '../../../../utils/auth'
-import { canVerify, requireAssessmentReviewAccess } from '../../../../utils/authorization'
+import { assertAssignedVerifier, canVerify, requireAssessmentReviewAccess } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
 import { auditData, readRouteId } from '../../../../utils/validation'
 
@@ -13,10 +13,11 @@ export default defineEventHandler(async (event) => {
   await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${id} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true } })
+    const current = await tx.assessment.findUniqueOrThrow({ where: { id }, select: { status: true, periodId: true, unitId: true } })
     if (!canVerify(current.status)) {
       throw createError({ statusCode: 409, statusMessage: current.status === 'VERIFIED' ? 'Hasil verifikasi sudah dikirim.' : 'Penilaian ini belum dikirim oleh unit kerja.' })
     }
+    await assertAssignedVerifier(tx, current, user.id)
     const responses = await tx.assessmentResponse.findMany({ where: { assessmentId: id }, select: { id: true, verification: { select: { id: true } } } })
     const unverified = responses.filter(({ verification }) => !verification)
     if (!responses.length || unverified.length) {

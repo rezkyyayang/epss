@@ -3657,6 +3657,68 @@ textarea.control.action-reason {
   font-size: 11px;
 }
 
+/* Reference lines are unfilled and differ by dash pattern as well as colour, so they stay apart without colour. */
+.radar-reference,
+.radar-legend line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.radar-reference--target {
+  stroke: #b54708;
+  stroke-dasharray: 7 4;
+}
+
+.radar-reference--average {
+  stroke: #48575f;
+  stroke-dasharray: 1.5 4;
+  stroke-linecap: round;
+}
+
+.radar-legend-unit {
+  stroke: var(--data);
+  stroke-width: 3;
+}
+
+.radar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  color: #34434a;
+  font-size: 13px;
+  list-style: none;
+}
+
+.radar-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 18px;
+}
+
+.score-reference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.score-reference strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
 .radar-shape {
   fill: rgba(49, 95, 168, 0.14);
   stroke: var(--data);

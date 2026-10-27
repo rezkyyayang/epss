@@ -34,7 +34,8 @@ const choices = ref<Record<string, string>>({})
 function resetChoices() {
   choices.value = Object.fromEntries((data.value?.rows || []).map((row) => [row.unit.id, row.verifier?.id ?? '']))
 }
-watch(data, resetChoices)
+// Immediate: returning to the page reuses cached data, which would otherwise leave every choice blank and unsaved.
+watch(data, resetChoices, { immediate: true })
 const changes = computed(() => (data.value?.rows || [])
   .filter((row) => (choices.value[row.unit.id] ?? '') !== (row.verifier?.id ?? ''))
   .map((row) => ({ unitId: row.unit.id, verifierId: choices.value[row.unit.id] || null })))

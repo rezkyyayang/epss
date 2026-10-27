@@ -46,7 +46,24 @@ export async function requireOwnedResponse(event: H3Event, responseId: string) {
   return { ...current, response }
 }
 
-// Admins are Pusdatin staff who verify every unit, so access is by role alone.
+// Setting final levels and sending the result belong to the verifier assigned to the unit for that period.
+// A unit with no verifier yet stays open to any Admin, so verification is not blocked before assignments are made.
+export async function assertAssignedVerifier(
+  client: Pick<typeof prisma, 'periodAssignment'>,
+  assessment: { periodId: string; unitId: string },
+  userId: string,
+) {
+  const assignment = await client.periodAssignment.findUnique({
+    where: { periodId_unitId: { periodId: assessment.periodId, unitId: assessment.unitId } },
+    select: { verifierId: true, verifier: { select: { displayName: true } } },
+  })
+  if (assignment?.verifierId && assignment.verifierId !== userId) {
+    const name = assignment.verifier?.displayName ?? 'verifikator lain'
+    throw createError({ statusCode: 403, statusMessage: `Penilaian ini ditugaskan ke ${name}. Hanya verifikator tersebut yang dapat memverifikasinya.` })
+  }
+}
+
+// Admins are Pusdatin staff who can open every unit; who may verify is checked by assertAssignedVerifier.
 export async function requireAssessmentReviewAccess(event: H3Event, assessmentId: string) {
   const current = await requireRole(event, 'ADMIN')
   const assessment = await prisma.assessment.findUnique({

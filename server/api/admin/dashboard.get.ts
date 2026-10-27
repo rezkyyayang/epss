@@ -22,9 +22,9 @@ export default defineEventHandler(async (event) => {
     ?? periods.find(({ id }) => id === busiest?.periodId)
     ?? periods.find(({ status }) => status === 'ACTIVE')
     ?? periods[0]
-  if (!period) return { periods, periodId: null, rows: [] }
+  if (!period) return { periods, periodId: null, domains: [], rows: [] }
 
-  const [assignments, assessments] = await Promise.all([
+  const [assignments, assessments, domains] = await Promise.all([
     prisma.periodAssignment.findMany({
       where: { periodId: period.id },
       select: { unit: { select: { id: true, name: true, code: true } }, verifier: { select: { id: true, displayName: true } } },
@@ -62,12 +62,15 @@ export default defineEventHandler(async (event) => {
         },
       },
     }),
+    // Domain targets are a reference for the chart dialog, set by Pusdatin per period.
+    prisma.domain.findMany({ where: { periodId: period.id }, select: { id: true, target: true }, orderBy: { position: 'asc' } }),
   ])
 
   const byUnit = new Map(assessments.map((assessment) => [assessment.unitId, assessment]))
   return {
     periods,
     periodId: period.id,
+    domains,
     rows: assignments.map(({ unit, verifier }) => ({ unit, verifier, assessment: byUnit.get(unit.id) ?? null })),
   }
 })

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { assertSameOrigin, requireRole } from '../../../../utils/auth'
-import { canVerify } from '../../../../utils/authorization'
+import { assertAssignedVerifier, canVerify } from '../../../../utils/authorization'
 import { prisma } from '../../../../utils/db'
 import { auditData, readRouteId, readValidatedPayload } from '../../../../utils/validation'
 
@@ -29,10 +29,11 @@ export default defineEventHandler(async (event) => {
   const result = await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Assessment" WHERE "id" = ${response.assessmentId} FOR UPDATE`
     if (!locked.length) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-    const assessment = await tx.assessment.findUniqueOrThrow({ where: { id: response.assessmentId }, select: { status: true } })
+    const assessment = await tx.assessment.findUniqueOrThrow({ where: { id: response.assessmentId }, select: { status: true, periodId: true, unitId: true } })
     if (!canVerify(assessment.status)) {
       throw createError({ statusCode: 409, statusMessage: assessment.status === 'VERIFIED' ? 'Hasil verifikasi sudah dikirim dan terkunci.' : 'Penilaian ini belum dikirim oleh unit kerja.' })
     }
+    await assertAssignedVerifier(tx, assessment, user.id)
     const verification = await tx.responseVerification.upsert({
       where: { responseId: id },
       create: { responseId: id, maturityLevelId: body.maturityLevelId, comment: body.comment, verifierId: user.id },

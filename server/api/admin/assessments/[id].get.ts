@@ -28,5 +28,10 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!assessment) throw createError({ statusCode: 404, statusMessage: 'Penilaian tidak ditemukan.' })
-  return { assessment }
+  // The page shows who may verify; the verification endpoints enforce it.
+  const assignment = await prisma.periodAssignment.findUnique({
+    where: { periodId_unitId: { periodId: assessment.periodId, unitId: assessment.unitId } },
+    select: { verifier: { select: { id: true, displayName: true } } },
+  })
+  return { assessment, assignedVerifier: assignment?.verifier ?? null }
 })

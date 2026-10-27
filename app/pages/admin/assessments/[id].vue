@@ -20,7 +20,7 @@ const statusLabels: Record<string, string> = { DRAFT: 'Draf', SUBMITTED: 'Menung
 
 const route = useRoute()
 const id = String(route.params.id)
-const { data, pending, error, refresh } = useFetch<{ assessment: Detail }>(`/api/admin/assessments/${id}`, { lazy: true })
+const { data, pending, error, refresh } = useFetch<{ assessment: Detail; assignedVerifier: { id: string; displayName: string } | null }>(`/api/admin/assessments/${id}`, { lazy: true })
 const assessment = computed((): Detail | undefined => data.value?.assessment)
 const busyResponse = ref('')
 const sending = ref(false)
@@ -54,6 +54,12 @@ function isChanged(response: ReviewResponse) {
 // The saved result is written into the page instead of reloading it, so the reviewer keeps their place;
 // the toast confirms it wherever they are scrolled.
 const auth = useAuth()
+// Only the assigned verifier sets final levels and sends the result; everyone else reads. Unassigned units stay open.
+const assignedToOther = computed(() => {
+  const verifier = data.value?.assignedVerifier
+  return verifier && verifier.id !== auth.user.value?.id ? verifier : null
+})
+const canAct = computed(() => canVerify.value && !assignedToOther.value)
 async function saveVerification(response: ReviewResponse) {
   busyResponse.value = response.id; pageError.value = ''; success.value = ''
   try {
@@ -86,6 +92,7 @@ async function sendVerification() {
       <template #actions><StatusBadge :status="assessment.status" /></template>
     </PageHeading>
     <NoticeBanner v-if="assessment.status === 'DRAFT'" tone="info">Unit kerja belum mengirim penilaian ini. Verifikasi dapat dimulai setelah dikirim.</NoticeBanner>
+    <NoticeBanner v-else-if="canVerify && assignedToOther" tone="warning">Penilaian ini ditugaskan ke {{ assignedToOther.displayName }}. Anda dapat melihat isian dan bukti, tetapi hanya {{ assignedToOther.displayName }} yang dapat menetapkan level final dan mengirim hasil verifikasi.</NoticeBanner>
     <NoticeBanner v-else-if="canVerify" tone="info">Tetapkan level final dan komentar untuk tiap indikator, lalu kirim hasil verifikasi di bagian bawah halaman.</NoticeBanner>
     <NoticeBanner v-else-if="assessment.status === 'VERIFIED'" tone="success">Hasil verifikasi sudah dikirim {{ formatDate(assessment.verifiedAt) }}. Level final terkunci.</NoticeBanner>
 
@@ -118,7 +125,7 @@ async function sendVerification() {
             <p v-else class="field-hint">Tidak ada tautan bukti.</p>
           </section>
 
-          <form v-if="canVerify" class="inline-confirm review-decision" @submit.prevent="saveVerification(response)">
+          <form v-if="canAct" class="inline-confirm review-decision" @submit.prevent="saveVerification(response)">
             <div class="field">
               <label :for="`final-level-${response.id}`">Level final</label>
               <select :id="`final-level-${response.id}`" v-model="levels[response.id]" class="control" required>
@@ -144,7 +151,7 @@ async function sendVerification() {
       </div>
     </section>
 
-    <section v-if="canVerify" class="panel panel-body review-start">
+    <section v-if="canAct" class="panel panel-body review-start">
       <div>
         <h2 class="section-title">Kirim hasil verifikasi</h2>
         <p class="section-note">{{ verifiedCount < totalCount ? `${totalCount - verifiedCount} indikator belum diberi level final.` : 'Semua indikator sudah diverifikasi. Setelah dikirim, unit kerja melihat nilai final dan hasilnya terkunci.' }}</p>

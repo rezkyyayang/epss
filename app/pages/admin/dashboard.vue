@@ -17,6 +17,7 @@ interface UnitRow {
 interface DashboardResult {
   periods: Array<{ id: string; name: string; status: string }>
   periodId: string | null
+  domains: Array<{ id: string; target: number | null }>
   rows: UnitRow[]
 }
 type Score = ReturnType<typeof weightedScore>
@@ -84,6 +85,37 @@ const sortedRows = computed(() => [...scoredRows.value].sort((a: ScoredRow, b: S
 }))
 
 // The mean final score of the period's verified units.
+// Reference values for the chart dialog, per domain: Pusdatin's target and the mean final score of verified units.
+const targetOf = computed((): Record<string, number | null> => Object.fromEntries((data.value?.domains || []).map(({ id, target }) => [id, target])))
+const averageOf = computed((): Record<string, number | null> => {
+  const scores = new Map<string, number[]>()
+  for (const row of scoredRows.value) {
+    if (!row.verified) continue
+    for (const domain of row.final?.domains || []) {
+      if (domain.score !== null) scores.set(domain.id, [...(scores.get(domain.id) || []), domain.score])
+    }
+  }
+  return Object.fromEntries([...scores].map(([id, values]) => [id, values.reduce((sum, value) => sum + value, 0) / values.length]))
+})
+const referenceValue = (value: number | null | undefined) => (typeof value === 'number' ? formatScore(value) : '-')
+// A reference line is drawn only when every domain has a value; a partial polygon would misread as a score of zero.
+const chartReferences = computed(() => {
+  const domains: DomainScore[] = selectedScore.value?.domains || []
+  const complete = (values: Record<string, number | null>) => domains.length > 0 && domains.every(({ id }: DomainScore) => typeof values[id] === 'number')
+  return [
+    { id: 'average', label: 'Rata-rata final', tone: 'average' as const, values: averageOf.value },
+    { id: 'target', label: 'Target', tone: 'target' as const, values: targetOf.value },
+  ].filter(({ values }) => complete(values))
+})
+// The weighted total of the domain targets, on the same formula as a unit's score.
+const targetTotal = computed(() => {
+  const domains: DomainScore[] = selectedScore.value?.domains || []
+  if (!domains.length || !domains.every(({ id }: DomainScore) => typeof targetOf.value[id] === 'number')) return null
+  return domains.reduce((sum: number, { id, weight }: DomainScore) => sum + weight / 100 * (targetOf.value[id] as number), 0)
+})
+const hasAverageLine = computed(() => chartReferences.value.some((reference: { id: string }) => reference.id === 'average'))
+const hasTargetLine = computed(() => chartReferences.value.some((reference: { id: string }) => reference.id === 'target'))
+
 const verifiedAverage = computed(() => {
   const totals = scoredRows.value
     .filter((row: ScoredRow) => row.verified)
@@ -105,6 +137,9 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
   return value === null || value === undefined ? '-' : formatScore(value)
 }
 const verifyPath = (row: ScoredRow) => `/admin/assessments/${row.assessment?.id}`
+// Only the assigned verifier (or anyone, while no one is assigned) gets the verify action; others get a read-only link.
+const auth = useAuth()
+const canVerifyRow = (row: ScoredRow) => row.waiting && (!row.verifier || row.verifier.id === auth.user.value?.id)
 const verifiedCount = (row: ScoredRow) => (row.assessment?.responses || []).filter((response: UnitResponse) => response.verification).length
 
 // Chart dialog. Previous and next follow the rows in the order shown on screen.
@@ -344,7 +379,8 @@ async function confirmAction() {
                 </td>
                 <td data-label="Aksi" class="row-actions-cell">
                   <div v-if="row.assessment" class="row-actions">
-                    <NuxtLink v-if="row.waiting" class="btn btn-primary btn-small row-action-main" :to="verifyPath(row)">Verifikasi</NuxtLink>
+                    <NuxtLink v-if="canVerifyRow(row)" class="btn btn-primary btn-small row-action-main" :to="verifyPath(row)">Verifikasi</NuxtLink>
+                    <NuxtLink v-else-if="row.waiting" class="btn btn-secondary btn-small row-action-main" :to="verifyPath(row)" :title="`Ditugaskan ke ${row.verifier?.displayName}`">Lihat</NuxtLink>
                     <NuxtLink v-else-if="row.verified" class="btn btn-secondary btn-small row-action-main" :to="verifyPath(row)">Hasil</NuxtLink>
                     <button
                       v-if="row.self"
@@ -423,25 +459,38 @@ async function confirmAction() {
                 </template>
                 <template v-else>Nilai total muncul setelah semua indikator memiliki level.</template>
               </p>
+              <p class="score-reference">
+                <span>Target <strong>{{ targetTotal === null ? '-' : formatScore(targetTotal) }}</strong></span>
+                <span>Rata-rata final <strong>{{ verifiedAverage ? formatScore(verifiedAverage.final) : '-' }}</strong><template v-if="verifiedAverage"> dari {{ verifiedAverage.count }} unit terverifikasi</template></span>
+              </p>
               <div class="data-table-wrap">
                 <table class="data-table score-table">
-                  <thead><tr><th scope="col">Domain</th><th scope="col" class="numeric">Bobot</th><th scope="col" class="numeric">Mandiri</th><th v-if="selectedRow.verified" scope="col" class="numeric">Final</th></tr></thead>
+                  <thead><tr><th scope="col">Domain</th><th scope="col" class="numeric">Bobot</th><th scope="col" class="numeric">Mandiri</th><th v-if="selectedRow.verified" scope="col" class="numeric">Final</th><th scope="col" class="numeric">Rata-rata final</th><th scope="col" class="numeric">Target</th></tr></thead>
                   <tbody>
                     <tr v-for="(domain, index) in selectedScore.domains" :key="domain.id">
                       <td>{{ index + 1 }}. {{ domain.name }}</td>
                       <td class="numeric">{{ domain.weight }}%</td>
                       <td class="numeric">{{ domainValue(selectedRow.self, domain.id) }}</td>
                       <td v-if="selectedRow.verified" class="numeric"><strong>{{ domainValue(selectedRow.final, domain.id) }}</strong></td>
+                      <td class="numeric">{{ referenceValue(averageOf[domain.id]) }}</td>
+                      <td class="numeric">{{ referenceValue(targetOf[domain.id]) }}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
             <figure class="score-chart">
-              <RadarChart :domains="selectedScore.domains" :max="selectedScore.maxLevel" />
+              <RadarChart :domains="selectedScore.domains" :max="selectedScore.maxLevel" :references="chartReferences" />
+              <ul class="radar-legend">
+                <li><svg viewBox="0 0 28 10" width="28" height="10" aria-hidden="true" focusable="false"><line class="radar-legend-unit" x1="2" y1="5" x2="26" y2="5" /></svg>{{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ selectedRow.unit.code }}</li>
+                <li v-if="hasAverageLine"><svg viewBox="0 0 28 10" width="28" height="10" aria-hidden="true" focusable="false"><line class="radar-reference--average" x1="2" y1="5" x2="26" y2="5" /></svg>Rata-rata final</li>
+                <li v-if="hasTargetLine"><svg viewBox="0 0 28 10" width="28" height="10" aria-hidden="true" focusable="false"><line class="radar-reference--target" x1="2" y1="5" x2="26" y2="5" /></svg>Target</li>
+              </ul>
               <figcaption>
-                {{ selectedRow.verified ? 'Nilai final' : 'Nilai mandiri' }} {{ selectedRow.unit.code }} pada skala 0 sampai {{ selectedScore.maxLevel }}.
+                Skala 0 sampai {{ selectedScore.maxLevel }}.
                 <template v-if="selectedHasGap">Domain yang belum lengkap ditandai "belum diisi" dan berada di titik nol.</template>
+                <template v-if="!hasTargetLine"> Target belum diisi untuk semua domain, sehingga belum digambar.</template>
+                <template v-if="!hasAverageLine"> Rata-rata final muncul setelah ada unit terverifikasi.</template>
               </figcaption>
             </figure>
           </div>
@@ -469,7 +518,8 @@ async function confirmAction() {
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
               </button>
             </div>
-            <NuxtLink v-if="selectedRow.waiting" class="btn btn-primary btn-small" :to="verifyPath(selectedRow)">Verifikasi unit ini</NuxtLink>
+            <NuxtLink v-if="canVerifyRow(selectedRow)" class="btn btn-primary btn-small" :to="verifyPath(selectedRow)">Verifikasi unit ini</NuxtLink>
+            <NuxtLink v-else-if="selectedRow.waiting" class="btn btn-secondary btn-small" :to="verifyPath(selectedRow)">Lihat isian</NuxtLink>
             <NuxtLink v-else-if="selectedRow.verified" class="btn btn-secondary btn-small" :to="verifyPath(selectedRow)">Lihat hasil</NuxtLink>
           </div>
         </template>

@@ -76,13 +76,16 @@ export default defineEventHandler(async (event) => {
     if (await tx.assessment.count({ where: { periodId } })) {
       throw createError({ statusCode: 409, statusMessage: 'Katalog terkunci setelah penilaian pertama dibuat.' })
     }
-    const domainIds = (await tx.domain.findMany({ where: { periodId }, select: { id: true } })).map(({ id }) => id)
+    const previousDomains = await tx.domain.findMany({ where: { periodId }, select: { id: true, code: true, target: true } })
+    const domainIds = previousDomains.map(({ id }) => id)
+    // Domains are rebuilt from scratch; a domain that keeps its code keeps the target Pusdatin set for it.
+    const targetOf = new Map(previousDomains.map(({ code, target }) => [code, target]))
     const indicatorIds = (await tx.indicator.findMany({ where: { domainId: { in: domainIds } }, select: { id: true } })).map(({ id }) => id)
     await tx.maturityLevel.deleteMany({ where: { indicatorId: { in: indicatorIds } } })
     await tx.indicator.deleteMany({ where: { id: { in: indicatorIds } } })
     await tx.domain.deleteMany({ where: { id: { in: domainIds } } })
 
-    await tx.domain.createMany({ data: domainRows })
+    await tx.domain.createMany({ data: domainRows.map((row) => ({ ...row, target: targetOf.get(row.code) ?? null })) })
     await tx.indicator.createMany({ data: indicatorRows.map(({ levels: _levels, ...row }) => row) })
     await tx.maturityLevel.createMany({ data: levelRows })
     await tx.auditEvent.create(auditData(user.id, 'period_catalog_replaced', 'Period', periodId, { domainCount: body.domains.length, indicatorCount }))

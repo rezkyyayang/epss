@@ -138,6 +138,8 @@ model Domain {
   name       String
   weight     Int
   position   Int         @default(0)
+  // Target domain score set by Pusdatin, on the catalog's level scale. Editable after the catalog locks.
+  target     Float?
   period     Period      @relation(fields: [periodId], references: [id], onDelete: Restrict)
   indicators Indicator[]
 
