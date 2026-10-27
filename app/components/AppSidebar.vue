@@ -12,6 +12,7 @@ const userLinks = [
 const adminLinks = [
   { label: 'Dashboard', to: '/admin/dashboard' },
   { label: 'Antrean verifikasi', to: '/admin/queue' },
+  { label: 'Penugasan verifikator', to: '/admin/assignments' },
   { label: 'Periode', to: '/admin/periods' },
   { label: 'Indikator', to: '/admin/indicators' },
   { label: 'Pengguna dan unit', to: '/admin/users' },

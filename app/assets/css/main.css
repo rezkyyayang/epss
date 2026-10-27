@@ -3124,6 +3124,59 @@ textarea.control {
   gap: 6px 12px;
 }
 
+.verifier-cell {
+  display: grid;
+  min-width: 130px;
+  gap: 3px;
+}
+
+/* Verifier assignment: a changed row is tinted until saved, and the save bar stays in reach on a long list. */
+.verifier-select {
+  min-width: 220px;
+}
+
+.assignment-table tr.is-changed td {
+  background: var(--brand-tint);
+}
+
+.assignment-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
+  padding: 14px 20px;
+  background: var(--surface);
+}
+
+.verifier-summary-note {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  color: #34434a;
+  font-size: 14px;
+}
+
+@media (max-width: 780px) {
+  .verifier-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .assignment-save-bar .table-actions {
+    width: 100%;
+  }
+
+  .assignment-save-bar .btn {
+    flex: 1;
+    min-height: 44px;
+  }
+}
+
 /* Switching periods keeps the old rows on screen, dimmed, until the new ones arrive. */
 .data-table-wrap.is-refreshing {
   opacity: 0.55;

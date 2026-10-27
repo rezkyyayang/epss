@@ -44,6 +44,7 @@ model User {
   createdAssessments Assessment[]  @relation("AssessmentCreator")
   addedEvidence    Evidence[]      @relation("EvidenceAuthor")
   verifications    ResponseVerification[]
+  verificationAssignments PeriodAssignment[] @relation("AssignedVerifier")
   statusEvents     StatusEvent[]
   auditEvents      AuditEvent[]
 
@@ -113,15 +114,19 @@ model Period {
 }
 
 model PeriodAssignment {
-  id        String   @id @default(cuid())
-  periodId  String
-  unitId    String
-  createdAt DateTime @default(now())
-  period    Period   @relation(fields: [periodId], references: [id], onDelete: Restrict)
-  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  id         String   @id @default(cuid())
+  periodId   String
+  unitId     String
+  // The Admin who verifies this unit in this period. Any Admin may still verify; this records who is responsible.
+  verifierId String?
+  createdAt  DateTime @default(now())
+  period     Period   @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  unit       Unit     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  verifier   User?    @relation("AssignedVerifier", fields: [verifierId], references: [id], onDelete: SetNull)
 
   @@unique([periodId, unitId])
   @@index([unitId, periodId])
+  @@index([verifierId, periodId])
 }
 
 // Weights are whole percentages. Domain weights in a period sum to 100,

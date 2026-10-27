@@ -10,15 +10,30 @@ interface QueueItem {
   period: { id: string; name: string }
   unit: { id: string; name: string; code: string }
   createdBy: { displayName: string }
+  verifier: { id: string; displayName: string } | null
   totalResponses: number
   completedResponses: number
   verifiedResponses: number
 }
-const { data, pending, error, refresh } = useFetch<{ assessments: QueueItem[]; units: Array<{ id: string; name: string; code: string }>; periods: Array<{ id: string; name: string }> }>('/api/admin/queue', { lazy: true })
+const { data, pending, error, refresh } = useFetch<{
+  assessments: QueueItem[]
+  units: Array<{ id: string; name: string; code: string }>
+  periods: Array<{ id: string; name: string }>
+  verifiers: Array<{ id: string; displayName: string }>
+}>('/api/admin/queue', { lazy: true })
+const auth = useAuth()
 const status = ref('')
 const unitId = ref('')
 const periodId = ref('')
-const visibleRows = computed(() => (data.value?.assessments || []).filter((row) => (!status.value || row.status === status.value) && (!unitId.value || row.unit.id === unitId.value) && (!periodId.value || row.period.id === periodId.value)))
+// '' is everyone, 'saya' the signed-in Admin, 'kosong' units with no verifier yet, otherwise one Admin's id.
+const verifierId = ref('')
+function matchesVerifier(row: QueueItem) {
+  if (!verifierId.value) return true
+  if (verifierId.value === 'kosong') return !row.verifier
+  const id = verifierId.value === 'saya' ? auth.user.value?.id : verifierId.value
+  return row.verifier?.id === id
+}
+const visibleRows = computed(() => (data.value?.assessments || []).filter((row) => (!status.value || row.status === status.value) && (!unitId.value || row.unit.id === unitId.value) && (!periodId.value || row.period.id === periodId.value) && matchesVerifier(row)))
 </script>
 
 <template>
@@ -32,15 +47,25 @@ const visibleRows = computed(() => (data.value?.assessments || []).filter((row) 
     <div class="filters-row">
       <div class="field"><label for="filter-status">Status</label><select id="filter-status" v-model="status" class="control"><option value="">Semua status</option><option value="SUBMITTED">Menunggu verifikasi</option><option value="IN_REVIEW">Dalam verifikasi</option><option value="VERIFIED">Terverifikasi</option></select></div>
       <div class="field"><label for="filter-unit">Unit</label><select id="filter-unit" v-model="unitId" class="control"><option value="">Semua unit</option><option v-for="unit in data?.units" :key="unit.id" :value="unit.id">{{ unit.name }} · {{ unit.code }}</option></select></div>
+      <div class="field">
+        <label for="filter-verifier">Verifikator</label>
+        <select id="filter-verifier" v-model="verifierId" class="control">
+          <option value="">Semua verifikator</option>
+          <option value="saya">Tugas saya</option>
+          <option value="kosong">Belum ditugaskan</option>
+          <option v-for="verifier in data?.verifiers" :key="verifier.id" :value="verifier.id">{{ verifier.displayName }}</option>
+        </select>
+      </div>
       <div class="field"><label for="filter-period">Periode</label><select id="filter-period" v-model="periodId" class="control"><option value="">Semua periode</option><option v-for="period in data?.periods" :key="period.id" :value="period.id">{{ period.name }}</option></select></div>
     </div>
     <div v-if="visibleRows.length" class="data-table-wrap mobile-records">
       <table class="data-table">
-        <thead><tr><th>Unit / Kegiatan</th><th>Status</th><th>Verifikasi</th><th>Pengisi</th><th>Dikirim</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Unit / Kegiatan</th><th>Status</th><th>Verifikator</th><th>Verifikasi</th><th>Pengisi</th><th>Dikirim</th><th>Aksi</th></tr></thead>
         <tbody><tr v-for="row in visibleRows" :key="row.id">
           <td data-label="Unit / Kegiatan"><div><strong>{{ row.unit.name }} · {{ row.unit.code }}</strong><br>{{ row.activityName || 'Kegiatan belum diisi' }}<span v-if="row.activityYear"> ({{ row.activityYear }})</span><br><span class="record-meta">{{ row.period.name }}</span></div></td>
           <td data-label="Status"><StatusBadge :status="row.status" /></td>
-          <td data-label="Verifikasi">{{ row.verifiedResponses }} dari {{ row.totalResponses }} indikator</td>
+          <td data-label="Verifikator"><span v-if="row.verifier">{{ row.verifier.displayName }}<span v-if="row.verifier.id === auth.user.value?.id" class="record-meta"> (Anda)</span></span><span v-else class="record-meta">Belum ditugaskan</span></td>
+          <td data-label="Verifikasi"><AssessmentProgress :complete="row.verifiedResponses" :total="row.totalResponses" /></td>
           <td data-label="Pengisi">{{ row.createdBy.displayName }}</td>
           <td data-label="Dikirim">{{ formatDate(row.submittedAt) }}</td>
           <td data-label="Aksi"><NuxtLink class="btn btn-secondary btn-small" :to="`/admin/assessments/${row.id}`">{{ row.status === 'VERIFIED' ? 'Lihat hasil' : 'Verifikasi' }}</NuxtLink></td>

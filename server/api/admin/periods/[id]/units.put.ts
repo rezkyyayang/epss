@@ -20,9 +20,12 @@ export default defineEventHandler(async (event) => {
     if (await tx.assessment.count({ where: { periodId } })) {
       throw createError({ statusCode: 409, statusMessage: 'Penugasan unit terkunci setelah penilaian pertama dibuat.' })
     }
+    // Rebuilding the list keeps each remaining unit's verifier, so saving the units never undoes verifier assignments.
+    const previous = await tx.periodAssignment.findMany({ where: { periodId }, select: { unitId: true, verifierId: true } })
+    const verifierOf = new Map(previous.map(({ unitId, verifierId }) => [unitId, verifierId]))
     await tx.periodAssignment.deleteMany({ where: { periodId } })
     if (uniqueIds.length) {
-      await tx.periodAssignment.createMany({ data: uniqueIds.map((unitId) => ({ periodId, unitId })) })
+      await tx.periodAssignment.createMany({ data: uniqueIds.map((unitId) => ({ periodId, unitId, verifierId: verifierOf.get(unitId) ?? null })) })
     }
     await tx.auditEvent.create(auditData(user.id, 'period_assignments_updated', 'Period', periodId, { unitIds: uniqueIds }))
   })

@@ -7,6 +7,7 @@ const names: Record<string, string> = {
   dashboard: 'Dashboard',
   history: 'Riwayat penilaian',
   queue: 'Antrean verifikasi',
+  assignments: 'Penugasan verifikator',
   periods: 'Periode',
   indicators: 'Indikator',
   users: 'Pengguna dan unit',

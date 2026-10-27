@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const [assignments, assessments] = await Promise.all([
     prisma.periodAssignment.findMany({
       where: { periodId: period.id },
-      select: { unit: { select: { id: true, name: true, code: true } } },
+      select: { unit: { select: { id: true, name: true, code: true } }, verifier: { select: { id: true, displayName: true } } },
       orderBy: { unit: { name: 'asc' } },
     }),
     prisma.assessment.findMany({
@@ -68,6 +68,6 @@ export default defineEventHandler(async (event) => {
   return {
     periods,
     periodId: period.id,
-    rows: assignments.map(({ unit }) => ({ unit, assessment: byUnit.get(unit.id) ?? null })),
+    rows: assignments.map(({ unit, verifier }) => ({ unit, verifier, assessment: byUnit.get(unit.id) ?? null })),
   }
 })

@@ -11,6 +11,7 @@ interface UnitResponse {
 }
 interface UnitRow {
   unit: { id: string; name: string; code: string }
+  verifier: { id: string; displayName: string } | null
   assessment: { id: string; status: string; activityName: string; activityYear: number | null; submittedAt: string | null; verifiedAt: string | null; responses: UnitResponse[] } | null
 }
 interface DashboardResult {
@@ -104,6 +105,7 @@ function domainValue(score: { domains: DomainScore[] } | null, domainId: string)
   return value === null || value === undefined ? '-' : formatScore(value)
 }
 const verifyPath = (row: ScoredRow) => `/admin/assessments/${row.assessment?.id}`
+const verifiedCount = (row: ScoredRow) => (row.assessment?.responses || []).filter((response: UnitResponse) => response.verification).length
 
 // Chart dialog. Previous and next follow the rows in the order shown on screen.
 const selectedUnitId = ref('')
@@ -319,12 +321,19 @@ async function confirmAction() {
         </div>
         <div v-if="scoredRows.length" class="data-table-wrap mobile-records" :class="{ 'is-refreshing': refreshing }">
           <table class="data-table unit-score-table">
-            <thead><tr><th scope="col">Unit kerja</th><th scope="col">Kegiatan statistik</th><th scope="col">Status</th><th scope="col" class="numeric">Nilai mandiri</th><th scope="col" class="numeric">Nilai final</th><th scope="col">Aksi</th></tr></thead>
+            <thead><tr><th scope="col">Unit kerja</th><th scope="col">Kegiatan statistik</th><th scope="col">Status</th><th scope="col">Verifikator</th><th scope="col" class="numeric">Nilai mandiri</th><th scope="col" class="numeric">Nilai final</th><th scope="col">Aksi</th></tr></thead>
             <tbody>
               <tr v-for="row in sortedRows" :key="row.unit.id" :class="{ 'is-selected': selectedUnitId === row.unit.id || menuUnitId === row.unit.id }">
                 <td data-label="Unit kerja"><div><strong>{{ row.unit.name }}</strong><br><span class="record-meta">{{ row.unit.code }}</span></div></td>
                 <td data-label="Kegiatan"><div>{{ row.assessment?.activityName || '-' }}<span v-if="row.assessment?.activityYear" class="record-meta"> ({{ row.assessment.activityYear }})</span></div></td>
                 <td data-label="Status"><StatusBadge v-if="row.assessment" :status="row.assessment.status" /><span v-else class="record-meta">Belum mulai</span></td>
+                <td data-label="Verifikator">
+                  <div class="verifier-cell">
+                    <span v-if="row.verifier">{{ row.verifier.displayName }}</span>
+                    <span v-else class="record-meta">Belum ditugaskan</span>
+                    <span v-if="row.waiting" class="record-meta" :title="`${verifiedCount(row)} dari ${row.assessment!.responses.length} indikator sudah diberi level final`">{{ verifiedCount(row) }}/{{ row.assessment!.responses.length }} indikator</span>
+                  </div>
+                </td>
                 <td data-label="Nilai mandiri" class="numeric">
                   <template v-if="scoreLabel(row.self)">{{ scoreLabel(row.self) }}</template>
                   <template v-else><span aria-hidden="true">-</span><span class="sr-only">Belum ada nilai</span></template>
