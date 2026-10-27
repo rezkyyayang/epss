@@ -38,7 +38,7 @@ async function signIn() {
     <main class="auth-main">
       <section class="auth-intro">
         <div>
-          <p class="auth-product-name">Sectoral</p>
+          <p class="auth-product-name">Monastik</p>
           <p class="auth-kicker">Penilaian internal</p>
           <h1>Jawaban dan bukti, dalam satu alur.</h1>
           <p>Isi indikator yang ditugaskan, lalu lihat level final dari Pusdatin setelah verifikasi selesai.</p>
@@ -47,7 +47,7 @@ async function signIn() {
       <form class="auth-form" @submit.prevent="signIn">
         <div class="auth-form-heading">
           <img class="auth-card-logo" src="/lan-ri-logo.png" alt="LAN RI">
-          <h2>Masuk ke Sectoral</h2>
+          <h2>Masuk ke Monastik</h2>
           <p>Gunakan akun yang dibuat oleh Admin organisasi Anda.</p>
         </div>
         <div class="field">
@@ -72,7 +72,7 @@ async function signIn() {
         </button>
         <div class="auth-links">
           <NuxtLink to="/pusat-bantuan">Butuh bantuan?</NuxtLink>
-          <NuxtLink to="/home">Tentang Sectoral</NuxtLink>
+          <NuxtLink to="/home">Tentang Monastik</NuxtLink>
         </div>
       </form>
     </main>

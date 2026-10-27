@@ -25,7 +25,7 @@ defineExpose({ focusMenuButton })
       </button>
       <NuxtLink class="brand-lockup" :to="auth.user.value?.role === 'ADMIN' ? '/admin/dashboard' : '/user/dashboard'">
         <img class="brand-logo" src="/lan-ri-logo.png" alt="LAN RI">
-        <span>Sectoral</span>
+        <span>Monastik</span>
       </NuxtLink>
     </div>
     <div class="header-end">

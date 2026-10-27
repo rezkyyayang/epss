@@ -5,8 +5,8 @@ const search = ref('')
 const questions = [
   {
     category: 'Akun',
-    question: 'Siapa yang dapat menggunakan Sectoral?',
-    answer: 'Sectoral memiliki dua peran. User mengisi penilaian pada unit dan periode yang ditugaskan. Admin mengelola periode, katalog, pengguna, dan memeriksa jawaban pada unit dalam cakupan aksesnya.',
+    question: 'Siapa yang dapat menggunakan Monastik?',
+    answer: 'Monastik memiliki dua peran. User mengisi penilaian pada unit dan periode yang ditugaskan. Admin mengelola periode, katalog, pengguna, dan memeriksa jawaban pada unit dalam cakupan aksesnya.',
   },
   {
     category: 'Penilaian',
@@ -46,7 +46,7 @@ const filteredQuestions = computed(() => {
     <header class="public-header">
       <NuxtLink class="brand-lockup" to="/home">
         <img class="brand-logo" src="/lan-ri-logo.png" alt="LAN RI">
-        <span>Sectoral</span>
+        <span>Monastik</span>
       </NuxtLink>
       <nav aria-label="Navigasi utama">
         <NuxtLink to="/home">Beranda</NuxtLink>
@@ -73,7 +73,7 @@ const filteredQuestions = computed(() => {
       </EmptyState>
     </main>
     <footer class="public-footer">
-      <span>Sectoral</span>
+      <span>Monastik</span>
       <NuxtLink to="/login">Masuk</NuxtLink>
     </footer>
   </div>
