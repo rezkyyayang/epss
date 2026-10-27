@@ -118,9 +118,7 @@ onBeforeRouteLeave(() => (changes.value.length ? window.confirm('Ada penugasan y
         <select id="assignment-period" v-model="selectedPeriodId" class="control" :disabled="!periods.length">
           <option v-for="period in periods" :key="period.id" :value="period.id">{{ period.name }}{{ period.status === 'CLOSED' ? ' (ditutup)' : '' }}</option>
         </select>
-      </div>
-      <p class="field-hint">Semua Admin tetap dapat memverifikasi unit mana pun. Penugasan menunjukkan siapa yang bertanggung jawab.</p>
-    </div>
+      </div>    </div>
 
     <EmptyState v-if="periodData && !periods.length" title="Belum ada periode" message="Buat periode dan tugaskan unit kerja terlebih dahulu." action-label="Kelola periode" action-to="/admin/periods" />
     <LoadingState v-else-if="pending && !data" label="Memuat penugasan..." />
